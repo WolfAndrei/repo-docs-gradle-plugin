@@ -51,6 +51,9 @@ internal class SiteNavigation(
     private val groupTitles: Map<String, String> =
         text.groupTitles() + customGroupTitles.mapKeys { it.key.trim().lowercase() }
 
+    /** Titles of the interactive pages by path. */
+    private var interactiveTitles: Map<String, String> = emptyMap()
+
     private val referenceTitle: String = groupTitles["reference"] ?: "Reference"
 
     /**
@@ -64,8 +67,10 @@ internal class SiteNavigation(
         index: String?,
         apiModules: List<ApiModuleEntry> = emptyList(),
         apiPages: List<ApiPage> = emptyList(),
+        interactivePages: List<InteractivePage> = emptyList(),
     ): List<NavigationItem> {
         val items = mutableListOf<NavigationItem>()
+        interactiveTitles = interactivePages.associate { it.path to it.title }
 
         readme?.let { pages[it] }?.let { items += NavigationItem(it.title, htmlPath(it.path), emptyList()) }
         index?.let { pages[it] }?.let { page ->
@@ -89,11 +94,31 @@ internal class SiteNavigation(
             items += NavigationItem(text["api"], root, orphans)
         }
 
+        val interactiveTitle = groupTitle(INTERACTIVE)
+        val listedBefore = items.flatMap { it.paths().toList() }.toSet()
+        val unplaced = mutableListOf<NavigationItem>()
+        interactivePages.filter { it.path !in listedBefore }.sortedBy { it.title }.groupBy { page ->
+            val library = page.path.removePrefix(documentationDir).substringBefore('/', "")
+            if (page.path.startsWith(documentationDir) && library.isNotEmpty()) {
+                htmlPath("$documentationDir$library/$INDEX")
+            } else {
+                ""
+            }
+        }.forEach { (library, group) ->
+            val entries = group.map { NavigationItem(it.title, it.path, emptyList()) }
+            val placed = library.isNotEmpty() && items.indices.any { position ->
+                val updated = placeGroup(items[position], library, interactiveTitle, entries)
+                if (updated != null) items[position] = updated
+                updated != null
+            }
+            if (!placed) unplaced += entries
+        }
+
         val listed = items.flatMap { it.paths().toList() }.toSet()
         val others = pages.values
             .filter { htmlPath(it.path) !in listed }
             .sortedBy { it.path }
-            .map { NavigationItem(it.path, htmlPath(it.path), emptyList()) }
+            .map { NavigationItem(it.path, htmlPath(it.path), emptyList()) } + unplaced
         if (others.isNotEmpty()) {
             items += NavigationItem(text["otherPages"], null, others)
         }
@@ -125,6 +150,35 @@ internal class SiteNavigation(
         }
         item.children.forEachIndexed { position, child ->
             placeApi(child, library, api)?.let { updated ->
+                return item.copy(children = item.children.toMutableList().apply { set(position, updated) })
+            }
+        }
+        return null
+    }
+
+    /**
+     * [item] with [entries] in its group [title] under the library page [library]: an existing group of that title
+     * gets them at its end, otherwise a new group goes at the end of the library; `null` if [item] does not contain
+     * the library.
+     */
+    private fun placeGroup(
+        item: NavigationItem,
+        library: String,
+        title: String,
+        entries: List<NavigationItem>,
+    ): NavigationItem? {
+        if (item.path == library) {
+            val children = item.children.toMutableList()
+            val group = children.indexOfFirst { it.path == null && it.title == title }
+            if (group >= 0) {
+                children[group] = children[group].let { it.copy(children = it.children + entries) }
+            } else {
+                children += NavigationItem(title, null, entries)
+            }
+            return item.copy(children = children)
+        }
+        item.children.forEachIndexed { position, child ->
+            placeGroup(child, library, title, entries)?.let { updated ->
                 return item.copy(children = item.children.toMutableList().apply { set(position, updated) })
             }
         }
@@ -193,7 +247,11 @@ internal class SiteNavigation(
             }
 
             target != null -> NavigationItem(entry.title, htmlPath(target.path), nested)
-            link.path in siteFiles -> NavigationItem(entry.title, link.path, nested)
+            link.path in siteFiles -> {
+                // A link written as the file name, such as `pkce.html`, shows the title of the page.
+                val pageTitle = interactiveTitles[link.path]?.takeIf { entry.title.endsWith(".html", ignoreCase = true) }
+                NavigationItem(pageTitle ?: entry.title, link.path, nested)
+            }
             else -> null
         }
     }
@@ -202,6 +260,7 @@ internal class SiteNavigation(
         const val API_DIR = "api"
         const val INDEX = "index.md"
         private val REFERENCE_TITLES = listOf("Reference", "Справочник")
+        private const val INTERACTIVE = "interactive"
 
         /** Path of the HTML page of the Markdown file [path]. */
         fun htmlPath(path: String): String = path.removeSuffix(".md") + ".html"

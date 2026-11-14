@@ -16,8 +16,13 @@
 
 package io.github.wolfandrei.docssite.site
 
-/** Layout of a page: a narrative article, the landing of a library, a declaration of the API reference. */
-internal enum class PageStyle(val css: String) { ARTICLE("article"), LANDING("landing"), SYMBOL("symbol") }
+/** Layout of a page: an article, the landing of a library, a declaration of the API, an interactive page. */
+internal enum class PageStyle(val css: String) {
+    ARTICLE("article"),
+    LANDING("landing"),
+    SYMBOL("symbol"),
+    INTERACTIVE("interactive"),
+}
 
 /**
  * HTML of the site pages. Every address is relative, so the site opens both from the server and from the file

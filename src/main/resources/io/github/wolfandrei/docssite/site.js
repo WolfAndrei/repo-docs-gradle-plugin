@@ -616,6 +616,20 @@
         }, 1000);
     }
 
+    // Interactive pages: the page in the frame reports its height, the frame takes it.
+    var MAX_FRAME_HEIGHT = 20000;
+    window.addEventListener("message", function (event) {
+        var height = event.data && event.data.docsSiteFrameHeight;
+        if (typeof height !== "number") {
+            return;
+        }
+        document.querySelectorAll("iframe.interactive-frame").forEach(function (frame) {
+            if (frame.contentWindow === event.source) {
+                frame.style.height = Math.min(Math.max(height, 200), MAX_FRAME_HEIGHT) + "px";
+            }
+        });
+    });
+
     var sidebar = document.querySelector(".sidebar");
     var current = document.querySelector(".sidebar a.current");
     if (sidebar && current) {

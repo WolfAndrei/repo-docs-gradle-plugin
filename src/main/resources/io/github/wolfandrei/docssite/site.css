@@ -767,6 +767,29 @@ mark {
     margin-bottom: 12px;
 }
 
+/* Interactive pages: the page lives in a frame that takes its height. */
+
+.content-interactive > * {
+    max-width: 1040px;
+}
+
+.interactive-frame {
+    display: block;
+    width: 100%;
+    height: 70vh;
+    border: 0;
+    background: transparent;
+}
+
+.interactive-open {
+    margin-top: 16px;
+    font-size: 14px;
+}
+
+.interactive-open a {
+    color: var(--fg-2);
+}
+
 /* API pages: kind, name, abstract, platforms; then declaration, overview and topics. */
 
 .content-symbol > * {

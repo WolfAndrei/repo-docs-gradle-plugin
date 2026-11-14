@@ -92,11 +92,15 @@ internal class SiteBuilder(
         val apiReference = sources.apiReference?.takeIf { it.isDirectory }
         val apiModules = if (apiReference != null) sources.apiModules else emptyList()
         val apiPages = apiReference?.let { DokkaReference(it, apiModules, text).pages }.orEmpty()
+        val interactive = sources.staticFiles
+            .filterKeys { it.endsWith(".html", ignoreCase = true) && !InteractivePages.isFrame(it) }
+            .map { (path, file) -> InteractivePages.read(path, file) }
         val navigation = SiteNavigation(pages, siteFiles, text, sources.groupTitles).build(
             readme = sources.readme.takeIf { it in pages },
             index = sources.index.takeIf { it in pages },
             apiModules = apiModules,
             apiPages = apiPages,
+            interactivePages = interactive,
         )
         val template = SiteTemplate(sources.title, navigation, text)
 
@@ -116,6 +120,16 @@ internal class SiteBuilder(
                 )
         }
 
+        interactive.forEach { page ->
+            val library = libraryIndex(page.path)?.takeIf { it in pages }
+            val back = library?.let {
+                val href = SiteTemplate.rootPrefix(page.path) + SiteNavigation.htmlPath(it)
+                href to pages.getValue(it).title
+            }
+            val content = InteractivePages.content(page, back, text["interactiveOpen"])
+            outputDir.resolve(page.path).writeText(template.page(page.path, page.title, content, PageStyle.INTERACTIVE))
+        }
+
         pages.values.forEach { page ->
             val htmlPath = SiteNavigation.htmlPath(page.path)
             val html = page.renderHtml { destination -> rewrite(page.path, destination, pages.keys, siteFiles) }
@@ -129,8 +143,18 @@ internal class SiteBuilder(
 
         if (!diagrams.usesBrowser) bundleDir.deleteRecursively()
         writeHome(pages)
-        writeAssets(SearchIndex.entries(pages.values) + SearchIndex.apiEntries(apiPages, text))
+        writeAssets(SearchIndex.entries(pages.values) + SearchIndex.apiEntries(apiPages, text) +
+                SearchIndex.interactiveEntries(interactive))
         writeStamp()
+    }
+
+    /** The index page of the library that [path] belongs to, `<documentation>/<library>/index.md`, if any. */
+    private fun libraryIndex(path: String): String? {
+        val documentation = sources.index.substringBeforeLast('/', "")
+        val prefix = if (documentation.isEmpty()) "" else "$documentation/"
+        if (!path.startsWith(prefix)) return null
+        val library = path.removePrefix(prefix).substringBefore('/', "").ifEmpty { return null }
+        return "$prefix$library/${SiteNavigation.INDEX}"
     }
 
     /** Whether [path] is the index page of a library, `<documentation>/<library>/index.md`: the landing style. */
@@ -176,7 +200,10 @@ internal class SiteBuilder(
         return siteFiles.any { it.startsWith(prefix) } || pages.any { it.startsWith(prefix) }
     }
 
-    /** Interactive pages get their links to the Markdown pages rewritten; other files are copied as they are. */
+    /**
+     * An interactive page is copied for its frame with its links to the Markdown pages rewritten, see
+     * [InteractivePages]; other files are copied as they are.
+     */
     private fun copyStatic(path: String, file: File, pages: Set<String>) {
         val target = outputDir.resolve(path).apply { parentFile.mkdirs() }
         if (!path.endsWith(".html", ignoreCase = true)) {
@@ -193,7 +220,7 @@ internal class SiteBuilder(
                 destination
             }
         }
-        target.writeText(html)
+        outputDir.resolve(InteractivePages.framePath(path)).writeText(InteractivePages.frameHtml(html))
     }
 
     /**

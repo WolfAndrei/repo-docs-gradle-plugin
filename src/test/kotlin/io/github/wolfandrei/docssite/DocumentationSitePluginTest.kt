@@ -74,11 +74,22 @@ internal class DocumentationSitePluginTest {
         assertTrue(fixture.site("_assets/plantuml/viz-global.js").isFile)
 
         val interactive = fixture.site("documentation/lib/interactive/modes.html").readText()
-        assertTrue("href=\"../how-to/usage.html#формат-хранения-v2\"" in interactive) { interactive }
+        assertTrue("<iframe class=\"interactive-frame\" src=\"modes.frame.html\" title=\"Режимы\">" in interactive) {
+            interactive
+        }
+        assertTrue("class=\"site-header\"" in interactive && "<title>Режимы - fixture</title>" in interactive) {
+            interactive
+        }
+        assertTrue("<span class=\"nav-label\">Режимы</span></a>" in interactive) { "the sidebar shows the page title: $interactive" }
+        val frame = fixture.site("documentation/lib/interactive/modes.frame.html").readText()
+        assertTrue("href=\"../how-to/usage.html#формат-хранения-v2\" target=\"_top\"" in frame) { frame }
+        assertTrue("docsSiteFrameHeight" in frame) { frame }
+        assertFalse("docsSiteFrameHeight" in fixture.file("documentation/lib/interactive/modes.html").readText())
 
         val search = fixture.site("_assets/search-index.js").readText()
         assertTrue(search.startsWith("window.DOCS_SEARCH_INDEX = "))
         assertTrue("usage.html#формат-хранения-v2" in search) { search.take(1000) }
+        assertTrue("\"t\":\"Режимы\",\"u\":\"documentation/lib/interactive/modes.html\"" in search) { search }
         assertTrue(fixture.site("_assets/site.js").isFile && fixture.site("_assets/site.css").isFile)
     }
 

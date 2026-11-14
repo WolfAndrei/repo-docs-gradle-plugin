@@ -57,6 +57,11 @@ internal object SearchIndex {
             SearchEntry("${page.qualifiedTitle} ($kind)", page.path, page.text.replace(WHITESPACE, " ").take(MAX_TEXT))
         }
 
+    /** An entry per interactive page: its title and its visible text. */
+    fun interactiveEntries(pages: Collection<InteractivePage>): List<SearchEntry> = pages
+        .sortedBy { it.path }
+        .map { SearchEntry(it.title, it.path, it.text.take(MAX_TEXT)) }
+
     fun toJson(entries: List<SearchEntry>): String = json.encodeToString(entries)
 
     /** The index as a script, so that the page loads it with `<script>` also from the file system. */
