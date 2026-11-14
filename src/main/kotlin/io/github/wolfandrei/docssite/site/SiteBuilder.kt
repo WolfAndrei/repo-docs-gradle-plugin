@@ -75,6 +75,9 @@ internal class SiteBuilder(
 
     private val text = UiText.of(sources.language)
 
+    /** Declarations of the API reference for the links of the pages; `null` without the reference. */
+    private var symbols: ApiSymbols? = null
+
     fun build() {
         outputDir.deleteRecursively()
         outputDir.mkdirs()
@@ -130,9 +133,16 @@ internal class SiteBuilder(
             outputDir.resolve(page.path).writeText(template.page(page.path, page.title, content, PageStyle.INTERACTIVE))
         }
 
+        symbols = apiReference?.let { ApiSymbols.read(it, apiModules) }
         pages.values.forEach { page ->
             val htmlPath = SiteNavigation.htmlPath(page.path)
-            val html = page.renderHtml { destination -> rewrite(page.path, destination, pages.keys, siteFiles) }
+            val library = libraryName(page.path)
+            val html = page.renderHtml(
+                rewrite = { destination -> rewrite(page.path, destination, pages.keys, siteFiles) },
+                codeLink = { code ->
+                    symbols?.resolve(code, library)?.let { SiteTemplate.rootPrefix(htmlPath) + it.path }
+                },
+            )
             val decorated = SiteTemplate.decorateArticle(diagrams.decorate(page.path, html))
             val content = CodeHighlighter.highlightBlocks(decorated)
             val style = if (isLibraryIndex(page.path)) PageStyle.LANDING else PageStyle.ARTICLE
@@ -157,6 +167,10 @@ internal class SiteBuilder(
         return "$prefix$library/${SiteNavigation.INDEX}"
     }
 
+    /** Name of the library that [path] belongs to: the directory under the documentation directory. */
+    private fun libraryName(path: String): String? = libraryIndex(path)?.removeSuffix("/${SiteNavigation.INDEX}")
+        ?.substringAfterLast('/')
+
     /** Whether [path] is the index page of a library, `<documentation>/<library>/index.md`: the landing style. */
     private fun isLibraryIndex(path: String): Boolean {
         val documentation = sources.index.substringBeforeLast('/', "")
@@ -178,16 +192,21 @@ internal class SiteBuilder(
     }
 
     /**
-     * The destination of a link of the page [pagePath] on the site: a page gets the `.html` extension, a repository
-     * file that is not on the site gets the [SiteSources.sourceBrowseUrl] prefix, the rest stays as written.
+     * The destination of a link of the page [pagePath] on the site: a page gets the `.html` extension, a `.kt` file
+     * named as a type of the API reference leads to the page of the type, a repository file that is not on the site
+     * gets the [SiteSources.sourceBrowseUrl] prefix, the rest stays as written.
      */
     private fun rewrite(pagePath: String, destination: String, pages: Set<String>, siteFiles: Set<String>): String {
         val link = RelativeLink.resolve(pagePath, destination) ?: return destination
         val pathPart = destination.substringBefore('#').substringBefore('?')
         if (pathPart.isEmpty()) return destination
 
+        val sourceType = link.path.takeIf { it.endsWith(".kt") }?.let { kotlinFile ->
+            symbols?.resolveType(kotlinFile.substringAfterLast('/').removeSuffix(".kt"), libraryName(pagePath))
+        }
         return when {
             link.path in pages -> pathPart.removeSuffix(".md") + ".html" + destination.substring(pathPart.length)
+            sourceType != null -> SiteTemplate.rootPrefix(pagePath) + sourceType.path
             link.path in siteFiles || isSiteDirectory(link.path, siteFiles, pages) -> destination
             else -> sources.sourceBrowseUrl?.let { it.trimEnd('/') + "/" + link.path + fragmentOf(link) } ?: destination
         }

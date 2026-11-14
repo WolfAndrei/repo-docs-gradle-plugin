@@ -208,9 +208,23 @@ internal class MarkdownPage(
 
     /**
      * HTML of the page with heading ids and with each link destination, including `href` and `src` of inline HTML,
-     * replaced by [rewrite]. Changes the parsed document, so it is called once.
+     * replaced by [rewrite]. An inline code outside links and headings becomes a link to [codeLink] of its text, if
+     * that gives one. Changes the parsed document, so it is called once.
      */
-    fun renderHtml(rewrite: (String) -> String): String {
+    fun renderHtml(rewrite: (String) -> String, codeLink: (String) -> String? = { null }): String {
+        val codes = mutableListOf<Code>()
+        document.accept(object : AbstractVisitor() {
+            override fun visit(code: Code) {
+                if (generateSequence(code.parent) { it.parent }.none { it is Link || it is Heading }) codes += code
+            }
+        })
+        codes.forEach { code ->
+            val destination = codeLink(code.literal) ?: return@forEach
+            val link = Link(destination, null)
+            code.insertBefore(link)
+            link.appendChild(code)
+        }
+
         document.accept(object : AbstractVisitor() {
             override fun visit(link: Link) {
                 link.destination = rewrite(link.destination)

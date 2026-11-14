@@ -90,7 +90,7 @@ internal class MarkdownPageTest {
 
     @Test
     fun `links are rewritten in Markdown and in HTML`() {
-        val html = page.renderHtml { it.replace(".md", ".html").replace("interactive/", "pages/") }
+        val html = page.renderHtml(rewrite = { it.replace(".md", ".html").replace("interactive/", "pages/") })
 
         assertTrue("href=\"how-to/usage.html#установка\"" in html) { html }
         assertTrue("href=\"pages/modes.html\"" in html) { html }
@@ -115,4 +115,42 @@ internal class MarkdownPageTest {
         assertNull(RelativeLink.resolve("documentation/index.md", "https://gitlab.example.com/a.md"))
         assertNull(RelativeLink.resolve("documentation/index.md", "mailto:team@example.com"))
     }
+
+    @Test
+    fun `inline code becomes a link outside links, headings and code blocks`() {
+        val source = """
+            |# Заголовок `Translator`
+            |
+            |Клиент `Translator`, метод `Greeter.greet` и `unknown`.
+            |
+            |Ссылка [`Translator`](other.md) остается.
+            |
+            |```kotlin
+            |val client: Translator
+            |```
+            |
+            |    Translator
+            """.trimMargin()
+        val asked = mutableListOf<String>()
+
+        val html = MarkdownPage("doc/lib/page.md", source).renderHtml(
+            rewrite = { it },
+            codeLink = { code ->
+                asked += code
+                if (code == "unknown") null else "api/$code.html"
+            },
+        )
+
+        assertEquals(listOf("Translator", "Greeter.greet", "unknown"), asked)
+        assertTrue(
+            "Клиент <a href=\"api/Translator.html\"><code>Translator</code></a>, метод " +
+                "<a href=\"api/Greeter.greet.html\"><code>Greeter.greet</code></a> и " +
+                "<code>unknown</code>." in html
+        ) { html }
+        assertTrue("<a href=\"other.md\"><code>Translator</code></a> остается" in html) { html }
+        assertTrue("<h1 id=\"заголовок-translator\">Заголовок <code>Translator</code></h1>" in html) {
+            html
+        }
+    }
 }
+
