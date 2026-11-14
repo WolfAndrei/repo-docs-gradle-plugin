@@ -17,10 +17,12 @@
 package io.github.wolfandrei.docssite
 
 import io.github.wolfandrei.docssite.check.RepositoryPathsValueSource
+import io.github.wolfandrei.docssite.lint.RumdlDistribution
 import io.github.wolfandrei.docssite.plantuml.GraphvizValueSource
 import io.github.wolfandrei.docssite.tasks.AggregateApiReferenceTask
 import io.github.wolfandrei.docssite.tasks.BuildDocumentationSiteTask
 import io.github.wolfandrei.docssite.tasks.CheckDocumentationTask
+import io.github.wolfandrei.docssite.tasks.MarkdownLintSettings
 import io.github.wolfandrei.docssite.tasks.RenderPlantUmlTask
 import io.github.wolfandrei.docssite.tasks.ServeDocumentationSiteTask
 import io.github.wolfandrei.docssite.markdown.MarkdownPage
@@ -44,7 +46,7 @@ import org.gradle.kotlin.dsl.register
  * - `documentationSite` builds the site in `build/docs-site`: README and the Markdown pages of `documentation` as
  *   HTML, the diagrams from their PlantUML sources, the interactive pages, the API reference and the search index;
  * - `documentationServe` serves it on `localhost` until Ctrl+C;
- * - `documentationCheck` checks links, anchors, diagrams and the style of the Markdown pages.
+ * - `documentationCheck` checks links, anchors, diagrams and the style of the Markdown pages, also with rumdl.
  *
  * The plugin configures only the root project: the API reference comes from the Dokka artifacts of the modules that
  * apply Dokka themselves, resolved by project dependencies.
@@ -125,6 +127,7 @@ internal class DocumentationSitePlugin : Plugin<Project> {
             forbiddenCharacters.set(extension.checks.forbiddenCharacters)
             anchorStyle.set(extension.anchorStyle)
             checkCommittedDiagrams.set(extension.checks.committedDiagrams)
+            configureMarkdownLint(markdownLint, extension)
             reportFile.set(layout.buildDirectory.file("docs-site-check/report.txt"))
         }
 
@@ -167,9 +170,38 @@ internal class DocumentationSitePlugin : Plugin<Project> {
         extension.anchorStyle.convention("gitlab")
         extension.checks.committedDiagrams.convention(true)
         extension.checks.excludedDirectories.convention(RepositoryPathsValueSource.DEFAULT_EXCLUDED_DIRECTORIES)
+        extension.checks.markdownLint.apply {
+            enabled.convention(true)
+            version.convention(RUMDL_VERSION)
+            distributionUrl.convention(RumdlDistribution.DEFAULT_URL)
+            checksums.convention(
+                version.map { if (it == RUMDL_VERSION) RumdlDistribution.CHECKSUMS else emptyMap() }
+            )
+            disabledRules.convention(emptyList())
+        }
         extension.serve.port.convention(
             providers.gradleProperty(PORT_PROPERTY).map(String::toInt).orElse(DEFAULT_PORT)
         )
+    }
+
+    private fun Project.configureMarkdownLint(settings: MarkdownLintSettings, extension: DocumentationSiteExtension) {
+        val lint = extension.checks.markdownLint
+        settings.enabled.set(lint.enabled)
+        settings.executable.set(lint.executable)
+        settings.version.set(lint.version)
+        settings.distributionUrl.set(lint.distributionUrl)
+        settings.checksums.set(lint.checksums)
+        settings.configFile.set(lint.configFile)
+        settings.discoveredConfigFiles.from(RUMDL_CONFIG_FILES.map { layout.projectDirectory.file(it) })
+        // The plugin checks the links and the anchors itself, with the anchor rules of the site, and the line length
+        // with its own exceptions: the same rules of rumdl would report the same problems twice.
+        settings.disabledRules.set(
+            lint.disabledRules.zip(extension.checks.maxLineLength) { rules, maxLineLength ->
+                rules + RUMDL_RULES_OF_PLUGIN + if (maxLineLength > 0) listOf(RUMDL_LINE_LENGTH_RULE) else emptyList()
+            }
+        )
+        settings.cacheDirectory.set(gradle.gradleUserHomeDir.resolve(RUMDL_CACHE))
+        settings.offline.set(gradle.startParameter.isOffline)
     }
 
     private fun Project.registerRender(extension: DocumentationSiteExtension, documentation: FileTree) =
@@ -292,6 +324,25 @@ internal class DocumentationSitePlugin : Plugin<Project> {
             Attribute.of("org.jetbrains.dokka.module-component", String::class.java)
         val DOKKA_PLUGINS =
             listOf("dokka-base", "templating-plugin", "all-modules-page-plugin", "analysis-kotlin-symbols")
+        const val RUMDL_VERSION = RumdlDistribution.VERSION
+        const val RUMDL_CACHE = "caches/docs-site/rumdl"
+
+        /** Configuration files rumdl finds in the repository root, inputs of the tasks. */
+        val RUMDL_CONFIG_FILES = listOf(
+            ".rumdl.toml",
+            "rumdl.toml",
+            ".config/rumdl.toml",
+            "pyproject.toml",
+            ".markdownlint.json",
+            ".markdownlint.jsonc",
+            ".markdownlint.yaml",
+            ".markdownlint.yml",
+            ".markdownlintignore",
+        )
+
+        /** Rules of rumdl the plugin checks itself: link fragments (MD051) and relative links (MD057). */
+        val RUMDL_RULES_OF_PLUGIN = listOf("MD051", "MD057")
+        const val RUMDL_LINE_LENGTH_RULE = "MD013"
         const val PORT_PROPERTY = "documentationSite.port"
         const val DEFAULT_PORT = 8000
         const val DEFAULT_MAX_LINE_LENGTH = 120

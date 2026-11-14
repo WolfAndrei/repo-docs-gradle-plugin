@@ -22,13 +22,15 @@ import org.gradle.testkit.runner.GradleRunner
 
 /**
  * A repository with documentation of a multi-library repository: README, the table of contents, a library index with
- * Russian headings, a C4 diagram with an include, an interactive page; optionally a Kotlin Multiplatform module.
+ * Russian headings, a C4 diagram with an include, an interactive page; optionally a Kotlin Multiplatform module. The
+ * Markdown linter is off unless [write] gets its settings: it needs the rumdl binary.
  */
 internal class DocumentationFixture(val projectDir: File) {
 
     fun write(
         module: Boolean = false,
         siteSettings: String = "apiReference { enabled.set(false) }\n    language.set(\"ru\")",
+        markdownLint: String = "enabled.set(false)",
     ) {
         val include = if (module) "include(\":lib\", \":plain\")" else ""
         file("settings.gradle.kts").writeText(
@@ -56,6 +58,10 @@ internal class DocumentationFixture(val projectDir: File) {
             |plugins {
             |    base
             |    id("io.github.wolfandrei.docs-site")
+            |}
+            |
+            |documentationSite {
+            |    checks { markdownLint { $markdownLint } }
             |}
             |
             |documentationSite {

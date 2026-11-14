@@ -17,9 +17,11 @@
 package io.github.wolfandrei.docssite.tasks
 
 import io.github.wolfandrei.docssite.check.DocumentationChecker
+import io.github.wolfandrei.docssite.check.DocumentationProblem
 import io.github.wolfandrei.docssite.check.DocumentationSources
 import io.github.wolfandrei.docssite.plantuml.PlantUmlReport
 import io.github.wolfandrei.docssite.markdown.AnchorStyle
+import java.io.File
 import org.gradle.api.DefaultTask
 import org.gradle.api.GradleException
 import org.gradle.api.file.ConfigurableFileCollection
@@ -33,6 +35,7 @@ import org.gradle.api.tasks.IgnoreEmptyDirectories
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.Internal
+import org.gradle.api.tasks.Nested
 import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.PathSensitive
@@ -41,8 +44,8 @@ import org.gradle.api.tasks.TaskAction
 
 /**
  * Checks the documentation: relative links and anchors, pages referenced from the indexes, PlantUML errors, committed
- * SVG that do not match their source, long lines and forbidden characters. Fails with the list of problems; pages
- * that no page links to are only reported.
+ * SVG that do not match their source, long lines and forbidden characters, and the rules of the rumdl Markdown linter.
+ * Fails with the list of problems; pages that no page links to are only reported.
  */
 @CacheableTask
 internal abstract class CheckDocumentationTask : DefaultTask() {
@@ -91,6 +94,9 @@ internal abstract class CheckDocumentationTask : DefaultTask() {
     @get:Input
     abstract val anchorStyle: Property<String>
 
+    @get:Nested
+    abstract val markdownLint: MarkdownLintSettings
+
     @get:OutputFile
     abstract val reportFile: RegularFileProperty
 
@@ -118,7 +124,7 @@ internal abstract class CheckDocumentationTask : DefaultTask() {
             checkCommittedDiagrams = checkCommittedDiagrams.get(),
             anchorStyle = AnchorStyle.valueOf(anchorStyle.get().uppercase()),
         )
-        val problems = DocumentationChecker(sources).check()
+        val problems = DocumentationChecker(sources).check() + lint(root, sources.pages.keys.toList())
         val (warnings, errors) = problems.partition { it.warning }
 
         reportFile.get().asFile.apply { parentFile.mkdirs() }.writeText(problems.joinToString("\n", postfix = "\n"))
@@ -130,5 +136,16 @@ internal abstract class CheckDocumentationTask : DefaultTask() {
             )
         }
         logger.lifecycle("Documentation check: ${sources.pages.size} pages, no problems")
+    }
+
+    /** Findings of rumdl on [pages] as problems; rumdl's own messages, such as configuration warnings, are logged. */
+    private fun lint(root: File, pages: List<String>): List<DocumentationProblem> {
+        if (!markdownLint.enabled.get() || pages.isEmpty()) return emptyList()
+
+        val output = markdownLint.rumdl(root).check(pages)
+        output.messages.forEach { logger.warn("rumdl: $it") }
+        return output.findings
+            .sortedWith(compareBy({ it.path }, { it.line ?: 0 }))
+            .map { DocumentationProblem(it.path, it.line, "[${it.rule}] ${it.message}") }
     }
 }

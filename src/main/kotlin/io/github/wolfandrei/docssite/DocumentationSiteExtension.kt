@@ -174,24 +174,78 @@ abstract class DocumentationSiteExtension @Inject constructor(objects: ObjectFac
     }
 
     /** Settings of `documentationCheck`. */
-    interface Checks {
+    abstract class Checks @Inject constructor(objects: ObjectFactory) {
         /** Whether `check` depends on `documentationCheck`; by default `false`. */
-        val runWithCheck: Property<Boolean>
+        abstract val runWithCheck: Property<Boolean>
 
-        /** Longest Markdown line outside code blocks; by default `120`, `0` turns the check off. */
-        val maxLineLength: Property<Int>
+        /**
+         * Longest Markdown line outside code blocks; by default `120`, `0` turns the check off. While the check is on,
+         * the rule MD013 of the Markdown linter is off.
+         */
+        abstract val maxLineLength: Property<Int>
 
         /** Whether the rows of tables are checked for [maxLineLength]; by default `false`. */
-        val lineLengthInTables: Property<Boolean>
+        abstract val lineLengthInTables: Property<Boolean>
 
         /** Characters a Markdown page must not contain outside code, such as the long dash `—`; by default none. */
-        val forbiddenCharacters: ListProperty<String>
+        abstract val forbiddenCharacters: ListProperty<String>
 
         /** Whether a committed SVG next to its `.puml` must match the source; by default `true`. */
-        val committedDiagrams: Property<Boolean>
+        abstract val committedDiagrams: Property<Boolean>
 
         /** Directory names that are not part of the repository for the links; by default build and cache dirs. */
-        val excludedDirectories: SetProperty<String>
+        abstract val excludedDirectories: SetProperty<String>
+
+        /** The rumdl Markdown linter of `documentationCheck` and `documentationFormat`. */
+        val markdownLint: MarkdownLint = objects.newInstance(MarkdownLint::class.java)
+
+        fun markdownLint(action: Action<MarkdownLint>) = action.execute(markdownLint)
+    }
+
+    /**
+     * The [rumdl](https://github.com/rvben/rumdl) Markdown linter: `documentationCheck` reports its findings,
+     * `documentationFormat` applies its fixes. The rules are configured in the files rumdl finds in the repository
+     * root itself, `.rumdl.toml` or `.markdownlint.json` and others, so that the editors see the same rules.
+     *
+     * The plugin checks the relative links and the anchors itself, so the rules MD051 and MD057 are always off, and
+     * MD013 is off while [Checks.maxLineLength] is not `0`.
+     */
+    abstract class MarkdownLint {
+        /** Whether the pages are checked with rumdl; by default `true`. */
+        abstract val enabled: Property<Boolean>
+
+        /** A local rumdl binary; without it the release archive of [version] is downloaded and cached. */
+        abstract val executable: RegularFileProperty
+
+        /** Version of rumdl to download; by default [DocumentationSitePlugin.RUMDL_VERSION]. */
+        abstract val version: Property<String>
+
+        /**
+         * Address of the release archive, by default the GitHub releases of rumdl:
+         * `https://github.com/rvben/rumdl/releases/download/v{version}/{asset}`. `{version}`, `{target}` (such as
+         * `aarch64-apple-darwin`) and `{asset}` (the archive name, such as `rumdl-v0.3.4-aarch64-apple-darwin.tar.gz`)
+         * are replaced; without `{asset}` the address is a directory of the archives. A mirror with authentication
+         * takes the credentials in the address, `https://user:password@host/...`.
+         */
+        abstract val distributionUrl: Property<String>
+
+        /**
+         * SHA-256 of the release archives by target, such as `"x86_64-unknown-linux-musl" to "<sha256>"`; the plugin
+         * knows them for its own [version]. A downloaded archive with another checksum fails the build.
+         */
+        abstract val checksums: MapProperty<String, String>
+
+        /**
+         * Configuration file of rumdl, `.rumdl.toml` or a markdownlint file such as `.markdownlint.json`; without it
+         * rumdl finds its configuration itself.
+         */
+        abstract val configFile: RegularFileProperty
+
+        /** Rules turned off in addition to the configuration, such as `MD041`; by default none. */
+        abstract val disabledRules: ListProperty<String>
+
+        /** Turns off [rules] in addition to the configuration. */
+        fun disable(vararg rules: String) = disabledRules.addAll(*rules)
     }
 
     /** Settings of `documentationServe`. */
