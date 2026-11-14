@@ -32,6 +32,11 @@ repository or in the plugin artifact):
 - Dokka command line and plugins (org.jetbrains.dokka:dokka-cli, dokka-base,
   templating-plugin, all-modules-page-plugin, analysis-kotlin-symbols) -
   Apache License 2.0, https://github.com/Kotlin/dokka
+- rumdl, the Markdown linter (a native binary) - MIT License, Copyright (c) 2024-2025 Ruben J. Jongejan,
+  https://github.com/rvben/rumdl. The plugin is not distributed with rumdl: the lint tasks
+  download the release archive of the platform from the rumdl releases or a configured
+  mirror into the Gradle user home and run it as a separate process. The archive contains
+  the LICENSE of rumdl; only the binary is extracted.
 
 The site does not use any network resources at run time: fonts are the system fonts of the
 reader, and the scripts and styles of the site are part of this repository.

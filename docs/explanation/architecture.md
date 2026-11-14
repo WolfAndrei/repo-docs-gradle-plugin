@@ -18,6 +18,7 @@ do. The settings are in [Configuration and tasks](../reference/configuration.md)
 - [Code highlighting](#code-highlighting)
 - [Search](#search)
 - [Server and live reload](#server-and-live-reload)
+- [Markdown linter](#markdown-linter)
 - [Caching](#caching)
 - [Limitations](#limitations)
 - [Source layout](#source-layout)
@@ -272,11 +273,36 @@ writes is `_assets/build-stamp`, a SHA-256 hash of all files of the site. A page
 a second and reloads when it changes. The hash depends only on the content, so a rebuild without changes does not
 reload the page, and a result from the build cache gives the same hash.
 
+## Markdown linter
+
+The plugin's own checks cover what a site needs: links, anchors, diagrams. The style of the Markdown itself, such as
+code fences without a language, trailing spaces or list indentation, is the job of a Markdown linter. The plugin
+runs [rumdl](https://github.com/rvben/rumdl), a linter with the rules of markdownlint and more, that reads the
+markdownlint configuration files. It is a single native binary: the build needs neither Node.js nor a JavaScript
+engine on the JVM, and it checks a repository in milliseconds.
+
+The binary is not part of the plugin. On the first run the lint task picks the release archive of the machine
+(macOS, Linux musl, Windows; x64 and arm64), downloads it from `distributionUrl`, compares its SHA-256 with the one
+pinned in the plugin, extracts only the binary and keeps it in
+`<Gradle user home>/caches/docs-site/rumdl/<version>/<target>/` with the checksum it was installed with. A file
+lock keeps two builds from installing at once. A later build finds the binary and its checksum there and uses no
+network, so `--offline` works. A version changed in the settings needs its own checksums: the plugin never trusts a
+checksum downloaded next to the archive.
+
+`documentationCheck` runs `rumdl check --output-format json` from the root project on its own list of pages, so
+rumdl checks exactly the pages of the site, with the configuration it finds for each of them. The findings join the
+problems of the plugin in the same format and the same report. The plugin turns off the rumdl rules it checks itself
+(MD051, MD057, and MD013 while `maxLineLength` is on): its anchor check knows the GitLab rules besides the GitHub
+ones, its link check knows the tables of contents and the diagrams. `documentationFormat` runs `rumdl fmt` with the
+same arguments.
+
 ## Caching
 
 - `documentationSite`, `documentationCheck`, `documentationRenderDiagrams` and `documentationApiReference` declare
   their inputs and outputs, are cacheable and compatible with the configuration cache; their input paths are
   relative, so the cache moves between clones.
+- The rumdl binary is identified by its version and checksum, or by the content of `executable`; the configuration
+  files rumdl reads for the pages are inputs too, so a change of `.rumdl.toml` reruns the check.
 - The list of repository files for the link check and the Graphviz found come from `ValueSource`s that are not read
   at configuration time: a new file or a Graphviz installation does not drop the configuration cache, it reruns the
   task that depends on it.
@@ -295,21 +321,24 @@ reload the page, and a result from the build cache gives the same hash.
 - An interactive page whose height follows the window (`height: 100vh`) grows with its frame up to 20000 px.
 - The site opens from the file system, but links to sources outside the site without `sourceBrowseUrl` and the live
   reload work only through `documentationServe`.
+- The rumdl rules above MD060 exist only in rumdl: the markdownlint extensions of the editors do not show them.
+- A rumdl configuration above the root project or the user configuration of rumdl (`~/.config/rumdl/rumdl.toml`) is
+  read by rumdl, but is not an input of `documentationCheck`: a change of it does not rerun the check.
 
 ## Source layout
 
-| What                                | File in `src/main/kotlin/io/github/wolfandrei/docssite/`                   |
-|-------------------------------------|----------------------------------------------------------------------------|
-| Plugin, tasks, configurations       | `DocumentationSitePlugin.kt`                                               |
-| The `documentationSite` block       | `DocumentationSiteExtension.kt`                                            |
-| Markdown, links, anchors            | `markdown/`                                                                |
-| Template, sidebar, search, diagrams | `site/`; styles and script in `src/main/resources/.../site.css`, `site.js` |
-| API pages and links to them         | `site/DokkaReference.kt`, `site/ApiSymbols.kt`                             |
-| Interactive pages                   | `site/InteractivePages.kt`                                                 |
-| Code highlighting                   | `site/CodeHighlighter.kt`                                                  |
-| Interface strings                   | `site/UiText.kt`                                                           |
-| Checks                              | `check/DocumentationChecker.kt`                                            |
-| PlantUML, Graphviz, fingerprints    | `tasks/RenderPlantUmlTask.kt`, `plantuml/`                                 |
-| Joining the Dokka output            | `tasks/AggregateApiReferenceTask.kt`                                       |
-| Server                              | `serve/DocumentationServer.kt`, `tasks/ServeDocumentationSiteTask.kt`      |
-
+| What                                | File in `src/main/kotlin/io/github/wolfandrei/docssite/`                     |
+|-------------------------------------|------------------------------------------------------------------------------|
+| Plugin, tasks, configurations       | `DocumentationSitePlugin.kt`                                                 |
+| The `documentationSite` block       | `DocumentationSiteExtension.kt`                                              |
+| Markdown, links, anchors            | `markdown/`                                                                  |
+| Template, sidebar, search, diagrams | `site/`; styles and script in `src/main/resources/.../site.css`, `site.js`   |
+| API pages and links to them         | `site/DokkaReference.kt`, `site/ApiSymbols.kt`                               |
+| Interactive pages                   | `site/InteractivePages.kt`                                                   |
+| Code highlighting                   | `site/CodeHighlighter.kt`                                                    |
+| Interface strings                   | `site/UiText.kt`                                                             |
+| Checks                              | `check/DocumentationChecker.kt`                                              |
+| Markdown linter: download, run      | `lint/`, `tasks/MarkdownLintSettings.kt`, `tasks/FormatDocumentationTask.kt` |
+| PlantUML, Graphviz, fingerprints    | `tasks/RenderPlantUmlTask.kt`, `plantuml/`                                   |
+| Joining the Dokka output            | `tasks/AggregateApiReferenceTask.kt`                                         |
+| Server                              | `serve/DocumentationServer.kt`, `tasks/ServeDocumentationSiteTask.kt`        |

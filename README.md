@@ -3,7 +3,8 @@
 A Gradle plugin that turns the documentation of a repository into a static site: the Markdown pages of
 `README.md` and `documentation/`, PlantUML diagrams drawn from their sources, interactive HTML pages and the Dokka
 API reference of the modules, under one navigation with one search. The site works offline, from the file system
-or from a local server with live reload, and `documentationCheck` finds broken links, anchors and stale diagrams.
+or from a local server with live reload, and `documentationCheck` finds broken links, anchors and stale diagrams
+and lints the Markdown with rumdl.
 
 ![An API page of a generated site](docs/images/site.png)
 
@@ -24,6 +25,9 @@ or from a local server with live reload, and `documentationCheck` finds broken l
 - **Search** over the pages, the sections, the declarations and the interactive pages.
 - **Checks**: links, anchors, PlantUML errors, committed SVG out of date with its source, line length and forbidden
   characters.
+- **Markdown linter.** [rumdl](https://github.com/rvben/rumdl) checks the pages by the markdownlint rules of the
+  repository's own `.markdownlint.json` or `.rumdl.toml`, and `documentationFormat` fixes what it can, tables
+  included.
 - English or Russian interface; light and dark theme; works on a phone.
 
 ## Quick start
@@ -65,7 +69,8 @@ Then:
 ```shell
 ./gradlew documentationSite      # build/docs-site/index.html
 ./gradlew documentationServe     # http://localhost:8000/
-./gradlew documentationCheck     # links, anchors, diagrams, style
+./gradlew documentationCheck     # links, anchors, diagrams, style, Markdown lint
+./gradlew documentationFormat    # fixes the Markdown pages in place
 ```
 
 The API reference needs nothing more than `id("org.jetbrains.dokka") version "2.1.0"` in the modules to document.
@@ -76,7 +81,11 @@ The API reference needs nothing more than `id("org.jetbrains.dokka") version "2.
 - [Configuration and tasks](docs/reference/configuration.md)
 - [How the plugin works](docs/explanation/architecture.md)
 
+The Markdown linter needs the rumdl binary. The plugin downloads it on the first run from the GitHub releases of
+rumdl, checks its SHA-256 and caches it in the Gradle user home; a mirror, an offline build and a local binary are
+described in [Lint the Markdown pages](docs/how-to/usage.md#lint-the-markdown-pages).
+
 ## License
 
 Apache License 2.0, see [LICENSE](LICENSE). Third-party components and their licenses are listed in
-[NOTICE](NOTICE).
+[NOTICE](NOTICE). rumdl (MIT License) is not bundled with the plugin: it is downloaded at build time.

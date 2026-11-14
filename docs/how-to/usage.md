@@ -1,7 +1,7 @@
 # How to set up, build, serve and check the site
 
-Setting up the plugin, building the site, serving it with live reload, checking the documentation, and fixing the
-usual problems. Every setting is described in [Configuration and tasks](../reference/configuration.md).
+Setting up the plugin, building the site, serving it with live reload, checking and linting the documentation, and
+fixing the usual problems. Every setting is described in [Configuration and tasks](../reference/configuration.md).
 
 ## Contents
 
@@ -10,6 +10,7 @@ usual problems. Every setting is described in [Configuration and tasks](../refer
 - [Build the site](#build-the-site)
 - [Serve with live reload](#serve-with-live-reload)
 - [Check the documentation](#check-the-documentation)
+- [Lint the Markdown pages](#lint-the-markdown-pages)
 - [Troubleshooting](#troubleshooting)
 
 ## Set up
@@ -171,6 +172,148 @@ documentationSite {
 }
 ```
 
+## Lint the Markdown pages
+
+`documentationCheck` also runs the [rumdl](https://github.com/rvben/rumdl) Markdown linter on the pages it checks.
+Its findings are in the same list, with the rule:
+
+```text
+  documentation/lib/how-to/usage.md:12: [MD040] Code block (```) missing language
+```
+
+On the first run the plugin downloads the rumdl binary for the machine from the GitHub releases of rumdl, checks its
+SHA-256 and keeps it in the Gradle user home; later builds, `--offline` ones too, take it from there. The linter is
+on by default; `checks { markdownLint { enabled.set(false) } }` turns it off.
+
+### Configure the rules
+
+The rules are configured in the files of the repository that rumdl finds itself, so an editor with a rumdl or
+markdownlint extension shows the same findings as the build. Two kinds of files work:
+
+- `.markdownlint.json` (also `.jsonc`, `.yaml`, `.yml`) - the markdownlint format. The markdownlint extensions of the
+  editors read it too. It only turns rules on and off and sets their options:
+
+  ```json
+  {
+    "default": true,
+    "MD013": false,
+    "MD033": false,
+    "MD007": { "indent": 2 }
+  }
+  ```
+
+- `.rumdl.toml` - the rumdl format, for what markdownlint files cannot say: excluded files, rules per file,
+  inheritance and the rules of rumdl only.
+
+  ```toml
+  [global]
+  disable = ["MD013", "MD033"]
+  exclude = ["documentation/generated/**"]
+
+  [per-file-ignores]
+  "CHANGELOG.md" = ["MD024"]
+
+  [MD007]
+  indent = 2
+
+  [MD060]
+  enabled = true
+  style = "aligned"
+  ```
+
+rumdl looks for its configuration in the directory of each page and then upwards: `.rumdl.toml`, `rumdl.toml`,
+`.config/rumdl.toml`, `pyproject.toml` with `[tool.rumdl]`, and only without them the markdownlint files. The first
+file found wins, so a `documentation/.rumdl.toml` replaces the root one for the pages under `documentation/`. To
+inherit the root one instead, start it with `extends`:
+
+```toml
+extends = "../.rumdl.toml"
+
+[global]
+extend-disable = ["MD036"]
+```
+
+`rumdl import .markdownlint.json` converts a markdownlint file to `.rumdl.toml`; `--dry-run` prints the result
+instead of writing it.
+
+One place in a page is exempted with a comment; the markdownlint form works as well as the rumdl one:
+
+```markdown
+<!-- markdownlint-disable MD033 -->
+<details><summary>Logs</summary>...</details>
+<!-- markdownlint-enable MD033 -->
+
+<!-- rumdl-disable-next-line MD036 -->
+**Not a heading**
+```
+
+Two settings of the plugin change the rules without a file:
+
+```kotlin
+documentationSite {
+    checks {
+        markdownLint {
+            configFile.set(file("config/markdownlint.json")) // only this file, the found ones are not read
+            disable("MD041")                                  // in addition to the configuration
+        }
+    }
+}
+```
+
+The plugin turns off MD051 and MD057, and MD013 while `maxLineLength` is not `0`: it checks anchors, links and
+line length itself, see [Rules shared with rumdl](../reference/configuration.md#rules-shared-with-rumdl).
+
+rumdl has more rules than markdownlint: the rules above MD060, such as MD064 (multiple consecutive spaces) or MD077
+(list continuation indentation), exist only in rumdl. The markdownlint extensions of the editors do not show them;
+the rumdl extension does.
+
+### Fix the pages
+
+```shell
+./gradlew documentationFormat
+```
+
+The task runs `rumdl fmt` on the pages of the check, with the same configuration, and rewrites them in place:
+trailing spaces, blank lines around headings and lists, code fences without a language (they get `text`), the
+indentation of lists. What cannot be fixed, such as a picture without alternative text, stays for
+`documentationCheck`. Review the changes with `git diff` before committing.
+
+Tables are aligned only with MD060 on, as in the `.rumdl.toml` above: the columns are padded by the display width of
+the text, so Cyrillic text lines up as well as Latin, and CJK characters count as two columns.
+
+### Use a mirror or work offline
+
+A machine without access to GitHub takes the archive from a mirror, such as a raw repository of an artifact
+manager that holds the release files under their names:
+
+```kotlin
+documentationSite {
+    checks {
+        markdownLint {
+            distributionUrl.set("https://repo.example.org/repository/raw/rumdl/v{version}/{asset}")
+        }
+    }
+}
+```
+
+The archive must be the release archive itself: its SHA-256 is checked against the one the plugin knows. Where
+neither GitHub nor a mirror is reachable, run the build once with the network, or install rumdl and set
+`executable.set(file("/usr/local/bin/rumdl"))`; then nothing is downloaded at all.
+
+### Migrate from the com.appmattus.markdown plugin
+
+The rules of `com.appmattus.markdown` are those of markdownlint under other names. To keep a configuration, turn the
+same rules off in `.markdownlint.json` or `.rumdl.toml` and remove that plugin:
+
+| appmattus rule      | rumdl                                                                      |
+|---------------------|----------------------------------------------------------------------------|
+| `LineLengthRule`    | MD013; the plugin's `maxLineLength` replaces it                            |
+| `NoInlineHtmlRule`  | MD033                                                                      |
+| `OlPrefixRule`      | MD029                                                                      |
+| `ProperNamesRule`   | MD044                                                                      |
+| `FirstLineH1Rule`   | MD041                                                                      |
+| `FirstHeaderH1Rule` | MD002 of the old markdownlint; rumdl has no such rule, nothing to turn off |
+
 ## Troubleshooting
 
 ### anchor ... is not a heading
@@ -227,3 +370,24 @@ java.net.BindException: Address already in use
 
 Cause: port `8000` is taken, for example by another `documentationServe`. Fix:
 `./gradlew documentationServe --port=8081`.
+
+### SHA-256 of rumdl is not the expected one
+
+```text
+SHA-256 of rumdl from https://repo.example.org/.../rumdl-v0.3.4-x86_64-unknown-linux-musl.tar.gz is 5f1c..., expected 2e64...
+```
+
+Cause: the file at `distributionUrl` is not the release archive: a mirror with another file, an error page, or a
+`version` changed without `checksums`. Nothing is installed. Fix: put the release archive on the mirror unchanged,
+or set `checksums` for the new version from the `.sha256` files of its release.
+
+### rumdl is not in the cache and Gradle is offline
+
+Cause: the binary has never been downloaded on this machine, and the build runs with `--offline`. Fix: run
+`./gradlew documentationCheck` once without `--offline`, or set `markdownLint.executable`.
+
+### No SHA-256 of the rumdl archive
+
+Cause: `version` is not the one of the plugin and `checksums` has no entry for the target of this machine. Fix: add
+it with `checksums.put("<target>", "<sha256>")`; the message names the target and the `.sha256` file to take it
+from.

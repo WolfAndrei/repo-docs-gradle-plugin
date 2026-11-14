@@ -12,6 +12,7 @@ site](../how-to/usage.md).
 - [navigation](#navigation)
 - [Layout conventions](#layout-conventions)
 - [checks](#checks)
+- [checks.markdownLint](#checksmarkdownlint)
 - [serve](#serve)
 - [Tasks](#tasks)
 - [Command line properties](#command-line-properties)
@@ -185,8 +186,87 @@ interactive page is found by its file type wherever it lies.
 
 `runWithCheck` works only if the root project has a `check` task, for example from the `base` plugin.
 
+While `maxLineLength` is not `0`, the rule MD013 of the Markdown linter is off: the plugin measures the lines itself,
+with the exceptions of [Check rules](#check-rules). With `maxLineLength.set(0)` MD013 works as its configuration
+says.
+
 The default `excludedDirectories`: `.git`, `.gradle`, `.idea`, `.kotlin`, `.cxx`, `build`, `node_modules`, `Pods`,
 `DerivedData`. A directory is excluded by its name at any depth.
+
+## checks.markdownLint
+
+The [rumdl](https://github.com/rvben/rumdl) Markdown linter of `documentationCheck` and `documentationFormat`. The
+rules themselves are configured in the files of the repository, see
+[Lint the Markdown pages](../how-to/usage.md#lint-the-markdown-pages).
+
+| Property          | Type                          | Default             | Purpose                                             |
+|-------------------|-------------------------------|---------------------|-----------------------------------------------------|
+| `enabled`         | `Property<Boolean>`           | `true`              | Whether the pages are checked with rumdl            |
+| `executable`      | `RegularFileProperty`         | not set             | A local rumdl binary; nothing is downloaded with it |
+| `version`         | `Property<String>`            | `0.3.4`             | Version of rumdl to download                        |
+| `distributionUrl` | `Property<String>`            | the GitHub releases | Address of the release archive, a template          |
+| `checksums`       | `MapProperty<String, String>` | SHA-256 of `0.3.4`  | SHA-256 of the release archives by target           |
+| `configFile`      | `RegularFileProperty`         | not set             | Configuration file; without it rumdl finds its own  |
+| `disabledRules`   | `ListProperty<String>`        | empty               | Rules turned off in addition to the configuration   |
+
+`disable("MD041", "MD036")` adds to `disabledRules`.
+
+```kotlin
+documentationSite {
+    checks {
+        markdownLint {
+            distributionUrl.set("https://repo.example.org/repository/raw/rumdl/v{version}/{asset}")
+            disable("MD041")
+        }
+    }
+}
+```
+
+`distributionUrl` is by default `https://github.com/rvben/rumdl/releases/download/v{version}/{asset}`. The
+placeholders:
+
+| Placeholder | Replaced with                    | Example                                         |
+|-------------|----------------------------------|-------------------------------------------------|
+| `{version}` | `version`                        | `0.3.4`                                         |
+| `{target}`  | Target of the machine, see below | `x86_64-unknown-linux-musl`                     |
+| `{asset}`   | File name of the release archive | `rumdl-v0.3.4-x86_64-unknown-linux-musl.tar.gz` |
+
+An address without `{asset}` is a directory: the file name is appended to it. A mirror with basic authentication
+takes the credentials in the address, `https://user:password@repo.example.org/...`; they are not printed in the
+messages. `file:` addresses work too.
+
+The target is chosen by `os.name` and `os.arch` of the Gradle JVM:
+
+| Machine                | Target                       | Archive   |
+|------------------------|------------------------------|-----------|
+| macOS on Apple silicon | `aarch64-apple-darwin`       | `.tar.gz` |
+| macOS on Intel         | `x86_64-apple-darwin`        | `.tar.gz` |
+| Linux x64              | `x86_64-unknown-linux-musl`  | `.tar.gz` |
+| Linux arm64            | `aarch64-unknown-linux-musl` | `.tar.gz` |
+| Windows x64 and arm64  | `x86_64-pc-windows-msvc`     | `.zip`    |
+
+Linux gets the static musl build, which runs with any C library. On another platform the task fails and asks for
+`executable`.
+
+`checksums` holds the SHA-256 of the release archives of `0.3.4`, taken from the `.sha256` files of the release;
+a changed `version` has no checksums until they are set, for the targets the builds run on:
+
+```kotlin
+documentationSite {
+    checks {
+        markdownLint {
+            version.set("0.3.5")
+            checksums.put("aarch64-apple-darwin", "<the content of rumdl-v0.3.5-aarch64-apple-darwin.tar.gz.sha256>")
+            checksums.put("x86_64-unknown-linux-musl", "<...>")
+        }
+    }
+}
+```
+
+`configFile` is a `.rumdl.toml` or a markdownlint file such as `.markdownlint.json`. With it rumdl reads only this
+file: the configuration files of the repository and of its directories are not read.
+
+The plugin also turns off the rules it checks itself, see [Rules shared with rumdl](#rules-shared-with-rumdl).
 
 ## serve
 
@@ -201,14 +281,16 @@ The default `excludedDirectories`: `.git`, `.gradle`, `.idea`, `.kotlin`, `.cxx`
 | `documentationSite`           | Builds the site in `outputDirectory`                                   |
 | `documentationServe`          | Builds the site and serves it on `localhost:<port>` until Ctrl+C       |
 | `documentationCheck`          | Checks the documentation by the [rules](#check-rules), fails on errors |
+| `documentationFormat`         | Fixes the Markdown pages in place with `rumdl fmt`                     |
 | `documentationRenderDiagrams` | Draws the `.puml` files to SVG and writes preprocessed sources         |
 | `documentationApiReference`   | Joins the Dokka HTML of the modules into one reference                 |
 
-All tasks but `documentationServe` are cacheable and compatible with the configuration cache and with isolated
-projects. `documentationServe` does not rebuild the site: `./gradlew documentationSite --continuous` in a second
-terminal does. `documentationRenderDiagrams` without `.puml` files and `documentationApiReference` without modules
-with Dokka are skipped (`NO-SOURCE`) and download nothing. The tasks are in the `documentation` group of
-`./gradlew tasks`.
+All tasks but `documentationServe` and `documentationFormat` are cacheable and compatible with the configuration
+cache and with isolated projects. `documentationFormat` changes the sources, so it is never up to date and is not
+cached; it is compatible with the configuration cache too. `documentationServe` does not rebuild the site:
+`./gradlew documentationSite --continuous` in a second terminal does. `documentationRenderDiagrams` without
+`.puml` files and `documentationApiReference` without modules with Dokka are skipped (`NO-SOURCE`) and download
+nothing. The tasks are in the `documentation` group of `./gradlew tasks`.
 
 ## Command line properties
 
@@ -234,6 +316,18 @@ with Dokka are skipped (`NO-SOURCE`) and download nothing. The tasks are in the 
 | `build/docs-site-api/`                 | The joined Dokka output before it becomes API pages                            |
 | `build/docs-site-check/report.txt`     | All problems of the last `documentationCheck`                                  |
 
+Outside the repository:
+
+| Path                                                            | Content                                                    |
+|-----------------------------------------------------------------|------------------------------------------------------------|
+| `<Gradle user home>/caches/docs-site/rumdl/<version>/<target>/` | The downloaded rumdl binary and the SHA-256 of its archive |
+
+The Gradle user home is `~/.gradle` unless `GRADLE_USER_HOME` or `--gradle-user-home` says otherwise.
+
+The configuration files rumdl reads in the directory of a page and in every directory above it, up to the root
+project, are inputs of `documentationCheck`: `.rumdl.toml`, `rumdl.toml`, `.config/rumdl.toml`, `pyproject.toml`,
+`.markdownlint.json`, `.markdownlint.jsonc`, `.markdownlint.yaml`, `.markdownlint.yml` and `.markdownlintignore`.
+
 `_assets/plantuml/` takes 6.7 MB with version `1.2026.9` and is copied only if at least one diagram is drawn in the
 browser.
 
@@ -248,12 +342,31 @@ browser.
 | Stale diagram       | A committed SVG next to its `.puml` shows other texts, elements, links or colours     |
 | Line length         | A line is longer than `maxLineLength`                                                 |
 | Forbidden character | A line contains a character of `forbiddenCharacters`                                  |
+| Markdown lint       | rumdl reports a rule of its configuration, such as `[MD009] 3 trailing spaces found`  |
 
 Line length and characters are not checked in code blocks, characters not in inline code either. Line length is not
 checked for table rows (unless `lineLengthInTables`) and for lines with an address (`://`); other lines are measured
 without the link targets `](...)`. For an anchor with a wrong case or hyphens the check suggests an existing one:
 `did you mean #storage-format?`. A page that no other page links to, except README and `index.md`, is reported as a
 warning and does not fail the build.
+
+A finding of rumdl is reported as `<path>:<line>: [<rule>] <message>` and fails the build whatever its rumdl
+severity; a rule that should not fail the build is turned off in the configuration.
+
+### Rules shared with rumdl
+
+Some rules of rumdl check what the plugin checks itself. The plugin keeps its own check and turns the rule off, so
+that a problem is reported once:
+
+| rumdl rule           | Plugin check   | Why the plugin check stays                                                           |
+|----------------------|----------------|--------------------------------------------------------------------------------------|
+| MD051 link fragments | Anchor         | MD051 follows the GitHub anchors; the plugin follows `anchorStyle`, GitLab or GitHub |
+| MD057 relative links | Link to a file | The plugin also checks `index.md` entries, HTML pages and diagrams not committed     |
+| MD013 line length    | Line length    | Off only while `maxLineLength` is not `0`; the plugin skips link targets and tables  |
+
+The other plugin checks have no rumdl rule, and the other rumdl rules have no plugin check: trailing spaces (MD009),
+code block languages (MD040) and the like come only from rumdl. MD061 (forbidden terms) is empty by default and
+does not overlap `forbiddenCharacters` unless both are configured.
 
 ## Dependencies
 
@@ -266,6 +379,7 @@ warning and does not fail the build.
 | npm `@plantuml/core` as `plantuml-npm:core@tgz`    | `1.2026.9` | Configuration `documentationPlantUmlJs`   |
 | `org.jetbrains.dokka:dokka-cli`                    | `2.1.0`    | Configuration `documentationDokkaCli`     |
 | Dokka plugins for the aggregation                  | `2.1.0`    | Configuration `documentationDokkaPlugins` |
+| rumdl binary, from its release archive             | `0.3.4`    | Downloaded by the lint tasks, not Maven   |
 
 The Dokka plugins are `dokka-base`, `templating-plugin`, `all-modules-page-plugin` and `analysis-kotlin-symbols`;
 the modules apply Dokka of the same version `2.1.0`. The licenses of the components are in
