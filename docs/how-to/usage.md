@@ -56,15 +56,19 @@ fixing the usual problems. Every setting is described in [Configuration and task
    Applied to another project, the plugin stops the configuration with
    `io.github.wolfandrei.docs-site is applied to the root project, not to :<project>`.
 
-3. Optionally set the language of the interface and the link prefix of the repository files that are not on the
-   site:
+3. Optionally set the language of the interface, the link prefix of the repository files that are not on the
+   site, and, for a repository hosted on GitLab, the GitLab rules of the heading anchors (the default is GitHub):
 
    ```kotlin
    documentationSite {
        language.set("ru")
        sourceBrowseUrl.set("https://gitlab.example.com/group/repo/-/blob/main/")
+       anchorStyle.set("gitlab")
    }
    ```
+
+   The line length limit of the check comes from `max_line_length` of `.editorconfig` for Markdown files; without
+   it lines are not measured. `checks { maxLineLength.set(120) }` sets it explicitly.
 
 4. For the API reference, apply Dokka `2.1.0` to each module to document:
 
@@ -79,7 +83,8 @@ fixing the usual problems. Every setting is described in [Configuration and task
 
 ## Write the documentation
 
-The plugin reads the layout below; other layouts work with the paths of
+The plugin reads the layout below, with `docs/` in place of `documentation/` if the repository has only `docs/`;
+other layouts work with the paths of
 [the documentationSite block](../reference/configuration.md#the-documentationsite-block).
 
 ```text
@@ -325,13 +330,15 @@ anchor `#release-notes---v2` of `#release-notes---v2` is not a heading of docs/c
 Cause: the anchor follows other rules than `anchorStyle`, for example GitHub rules, which keep `---`, on a site
 with GitLab rules, which shorten it to `-`.
 
-Fix: use the suggested anchor, or set `anchorStyle` to the rules of the Git hosting of the repository. The rules
+Fix: use the suggested anchor, or set `anchorStyle` to the rules of the Git hosting of the repository: the default
+is `github`, a GitLab repository sets `anchorStyle.set("gitlab")`. The rules
 are in [Heading anchors](../explanation/architecture.md#heading-anchors).
 
 ### out of date with its PlantUML source
 
 Cause: the `.puml` or an included `.iuml` changed, and the committed SVG was drawn from the old source. The site
-never shows the committed SVG; the check exists for the Git hosting.
+never shows the committed SVG; the check exists for the Git hosting and runs only with
+`checks { committedDiagrams.set(true) }`.
 
 Fix: draw the SVG again and commit it:
 

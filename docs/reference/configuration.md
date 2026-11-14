@@ -24,17 +24,21 @@ site](../how-to/usage.md).
 
 Paths are relative to the directory of the root project.
 
-| Property                 | Type                         | Default                  | Purpose                                                     |
-|--------------------------|------------------------------|--------------------------|-------------------------------------------------------------|
-| `title`                  | `Property<String>`           | name of the root project | Title in the header of every page                           |
-| `readme`                 | `RegularFileProperty`        | `README.md`              | Home page; skipped if the file is missing                   |
-| `documentationDirectory` | `DirectoryProperty`          | `documentation`          | Directory of the documentation                              |
-| `index`                  | `RegularFileProperty`        | `documentation/index.md` | Table of contents, the root of the sidebar                  |
-| `additionalPages`        | `ConfigurableFileCollection` | empty                    | Markdown pages outside the documentation, such as READMEs   |
-| `outputDirectory`        | `DirectoryProperty`          | `build/docs-site`        | Directory of the site                                       |
-| `sourceBrowseUrl`        | `Property<String>`           | not set                  | Address prefix of the repository files that are not on site |
-| `language`               | `Property<String>`           | `en`                     | Language of the interface: `en` or `ru`                     |
-| `anchorStyle`            | `Property<String>`           | `gitlab`                 | Rules of the heading ids: `gitlab` or `github`              |
+| Property                 | Type                         | Default                             | Purpose                                                     |
+|--------------------------|------------------------------|-------------------------------------|-------------------------------------------------------------|
+| `title`                  | `Property<String>`           | name of the root project            | Title in the header of every page                           |
+| `readme`                 | `RegularFileProperty`        | `README.md`                         | Home page; skipped if the file is missing                   |
+| `documentationDirectory` | `DirectoryProperty`          | `documentation` or `docs`           | Directory of the documentation                              |
+| `index`                  | `RegularFileProperty`        | `<documentationDirectory>/index.md` | Table of contents, the root of the sidebar                  |
+| `additionalPages`        | `ConfigurableFileCollection` | empty                               | Markdown pages outside the documentation, such as READMEs   |
+| `outputDirectory`        | `DirectoryProperty`          | `build/docs-site`                   | Directory of the site                                       |
+| `sourceBrowseUrl`        | `Property<String>`           | not set                             | Address prefix of the repository files that are not on site |
+| `language`               | `Property<String>`           | `en`                                | Language of the interface: `en` or `ru`                     |
+| `anchorStyle`            | `Property<String>`           | `github`                            | Rules of the heading ids: `github` or `gitlab`              |
+
+`documentationDirectory` is by default `documentation` if that directory exists, otherwise `docs` if it exists,
+otherwise `documentation`. Creating or removing one of them reconfigures the build, the configuration cache
+included.
 
 `sourceBrowseUrl` has the form `https://gitlab.example.com/group/repo/-/blob/main/`: a link to
 `lib/build.gradle.kts` becomes `<sourceBrowseUrl>lib/build.gradle.kts`. Without it such a link stays relative and
@@ -43,7 +47,15 @@ only `documentationServe` opens it, from the repository.
 `language` sets every string of the interface: the header, the search, the sidebar groups, the sections and kinds of
 the API pages, the diagram buttons. The pages themselves are not translated.
 
-`anchorStyle` selects the rules of [Heading anchors](../explanation/architecture.md#heading-anchors).
+`anchorStyle` selects the rules of [Heading anchors](../explanation/architecture.md#heading-anchors). The default
+follows GitHub; a repository hosted on GitLab sets the GitLab rules, so that its `#anchor` links are checked as
+GitLab resolves them:
+
+```kotlin
+documentationSite {
+    anchorStyle.set("gitlab")
+}
+```
 
 ## plantUml
 
@@ -152,7 +164,7 @@ What the plugin expects from the layout of the documentation, and how to change 
 
 | Convention                                                                                       | Override                                   |
 |--------------------------------------------------------------------------------------------------|--------------------------------------------|
-| The documentation is in `documentation/`, its table of contents is `index.md`                    | `documentationDirectory`, `index`          |
+| The documentation is in `documentation/` or `docs/`, its table of contents is `index.md`          | `documentationDirectory`, `index`          |
 | README is the home page                                                                          | `readme`                                   |
 | A table of contents is `index.md`, `README.md`, `*-index.md` or a page of links                  | `navigation.hubs`, `navigation.detectHubs` |
 | An entry shows the heading of its page                                                           | `navigation.titleSource`                   |
@@ -167,7 +179,7 @@ What the plugin expects from the layout of the documentation, and how to change 
 | A first paragraph that is a single link is the back link                                         | none                                       |
 | A quote that starts with `⚠️` or a bold Warning, Important, Внимание or Важно is a warning       | none                                       |
 | A quote that starts with Note or Примечание is a note                                            | none                                       |
-| Heading ids follow GitLab                                                                        | `anchorStyle`                              |
+| Heading ids follow GitHub                                                                        | `anchorStyle`                              |
 
 The directory names of the Diátaxis layout (`how-to/`, `reference/`, `explanation/`, `diagrams/`, `interactive/`)
 mean nothing to the plugin: the headings of the tables of contents make the groups, and every diagram and
@@ -175,16 +187,30 @@ interactive page is found by its file type wherever it lies.
 
 ## checks
 
-| Property              | Type                   | Default                          | Purpose                                         |
-|-----------------------|------------------------|----------------------------------|-------------------------------------------------|
-| `runWithCheck`        | `Property<Boolean>`    | `false`                          | Whether `check` depends on `documentationCheck` |
-| `maxLineLength`       | `Property<Int>`        | `120`                            | Longest Markdown line; `0` turns the check off  |
-| `lineLengthInTables`  | `Property<Boolean>`    | `false`                          | Whether the rows of tables are checked          |
-| `forbiddenCharacters` | `ListProperty<String>` | empty                            | Characters a page must not contain, such as `—` |
-| `committedDiagrams`   | `Property<Boolean>`    | `true`                           | Whether a committed SVG must match its `.puml`  |
-| `excludedDirectories` | `SetProperty<String>`  | `.git`, `.gradle`, `build`, more | Directories the links do not see as files       |
+| Property              | Type                   | Default                                        | Purpose                                         |
+|-----------------------|------------------------|------------------------------------------------|-------------------------------------------------|
+| `runWithCheck`        | `Property<Boolean>`    | `false`                                        | Whether `check` depends on `documentationCheck` |
+| `maxLineLength`       | `Property<Int>`        | `max_line_length` of `.editorconfig`, else `0` | Longest Markdown line; `0` turns the check off  |
+| `lineLengthInTables`  | `Property<Boolean>`    | `false`                                        | Whether the rows of tables are checked          |
+| `forbiddenCharacters` | `ListProperty<String>` | empty                                          | Characters a page must not contain, such as `—` |
+| `committedDiagrams`   | `Property<Boolean>`    | `false`                                        | Whether a committed SVG must match its `.puml`  |
+| `excludedDirectories` | `SetProperty<String>`  | `.git`, `.gradle`, `build`, more               | Directories the links do not see as files       |
 
 `runWithCheck` works only if the root project has a `check` task, for example from the `base` plugin.
+
+`maxLineLength` is by default the `max_line_length` that `.editorconfig` gives the Markdown files: the value for the
+table of contents `index`, from the `.editorconfig` files of its directory and the directories above it up to the
+one with `root = true`. A later section overrides an earlier one, a closer file a farther one; section globs such as
+`[*]`, `[*.md]` and `[*.{md,kt}]` work. `off`, no value or no `.editorconfig` mean no limit, `0`. The files are
+inputs of `documentationCheck`, and an explicit `maxLineLength.set(...)` wins over them:
+
+```editorconfig
+[*]
+max_line_length = 120
+```
+
+`committedDiagrams.set(true)` checks the SVG committed next to a `.puml` for a Git hosting that shows only the
+committed pictures, see [Stale diagram](#check-rules).
 
 While `maxLineLength` is not `0`, the rule MD013 of the Markdown linter is off: the plugin measures the lines itself,
 with the exceptions of [Check rules](#check-rules). With `maxLineLength.set(0)` MD013 works as its configuration

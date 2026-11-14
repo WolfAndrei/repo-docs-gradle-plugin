@@ -1,18 +1,18 @@
 # docs-site
 
 A Gradle plugin that turns the documentation of a repository into a static site: the Markdown pages of
-`README.md` and `documentation/`, PlantUML diagrams drawn from their sources, interactive HTML pages and the Dokka
-API reference of the modules, under one navigation with one search. The site works offline, from the file system
-or from a local server with live reload, and `documentationCheck` finds broken links, anchors and stale diagrams
-and lints the Markdown with rumdl.
+`README.md` and `documentation/` (or `docs/`), PlantUML diagrams drawn from their sources, interactive HTML pages
+and the Dokka API reference of the modules, under one navigation with one search. The site works offline, from the
+file system or from a local server with live reload, and `documentationCheck` finds broken links, anchors and stale
+diagrams and lints the Markdown with rumdl.
 
 ![An API page of a generated site](docs/images/site.png)
 
 ## Features
 
-- **Markdown as on GitLab and GitHub.** Relative links between `.md` files, heading anchors by the rules of GitLab
-  or GitHub, GFM tables, task lists and autolinks. The site keeps the layout of the repository, so the links stay
-  valid.
+- **Markdown as on GitLab and GitHub.** Relative links between `.md` files, heading anchors by the rules of GitHub
+  (default) or GitLab (`anchorStyle.set("gitlab")`), GFM tables, task lists and autolinks. The site keeps the
+  layout of the repository, so the links stay valid.
 - **Diagrams from source.** Every `.puml` is drawn at build time or in the browser; the committed SVG is never
   shown. Diagrams can be zoomed, panned and opened full screen.
 - **API reference inside the documentation.** The Dokka pages of the modules that apply Dokka are shown in the
@@ -23,8 +23,8 @@ and lints the Markdown with rumdl.
 - **Code highlighting at build time** for Kotlin, Swift, Java, Groovy, shell, JSON, YAML, XML, C family, CMake,
   properties and TOML, PlantUML and diff.
 - **Search** over the pages, the sections, the declarations and the interactive pages.
-- **Checks**: links, anchors, PlantUML errors, committed SVG out of date with its source, line length and forbidden
-  characters.
+- **Checks**: links, anchors, PlantUML errors, line length (the limit of `.editorconfig`), forbidden characters and,
+  optionally, committed SVG out of date with its source.
 - **Markdown linter.** [rumdl](https://github.com/rvben/rumdl) checks the pages by the markdownlint rules of the
   repository's own `.markdownlint.json` or `.rumdl.toml`, and `documentationFormat` fixes what it can, tables
   included.

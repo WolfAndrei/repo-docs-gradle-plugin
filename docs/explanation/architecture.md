@@ -81,14 +81,15 @@ on the site. Both styles:
 3. turn each space into `-`;
 4. number a repeated id of a page with `-1`, `-2` and so on in the order of the headings.
 
-`gitlab` (default) also turns runs of `-` into one `-` and gives an id of digits only the `anchor-` prefix, as GitLab
-Flavored Markdown documents in «Heading IDs and links». `github` does neither. The styles differ only for headings
-with a run of hyphens or spaces, `A - B` is `a-b` on GitLab and `a---b` on GitHub, and for headings of digits only.
+`gitlab` also turns runs of `-` into one `-` and gives an id of digits only the `anchor-` prefix, as GitLab
+Flavored Markdown documents in «Heading IDs and links». `github` (default) does neither. The styles differ only for
+headings with a run of hyphens or spaces, `A - B` is `a-b` on GitLab and `a---b` on GitHub, and for headings of
+digits only.
 `Storage format (v2)` is `storage-format-v2` in both.
 
 ## Sidebar
 
-The sidebar is built from the table of contents `documentation/index.md`:
+The sidebar is built from the table of contents, `index.md` of the documentation directory:
 
 - a heading of the second or a lower level opens a group; its title comes from
   [navigation.groupTitles](../reference/configuration.md#navigation) when the heading is a known one, such as
@@ -168,6 +169,9 @@ Inline, a diagram fits the width of the text at most at its own size and at most
 dark theme the diagram lies on a light card, since PlantUML draws for a light background.
 
 ### Committed SVG check
+
+With `checks.committedDiagrams.set(true)` the check also compares the SVG committed next to a `.puml` with the one
+drawn from it, for a Git hosting that shows only the committed pictures. It is off by default.
 
 A byte comparison with the committed SVG does not work: the coordinates depend on the layout engine, on the font
 metrics of the JVM and on the PlantUML version. The check compares **fingerprints**, what the diagram shows without
