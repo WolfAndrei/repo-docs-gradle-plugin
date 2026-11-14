@@ -62,7 +62,8 @@ internal class DocumentationSitePluginTest {
         assertTrue("<details class=\"diagram-source\"><summary>Исходник: <code>context.puml</code>" in usage) { usage }
         assertTrue("<li><code>&lt;C4/C4_Context&gt;</code></li>" in usage) { usage }
         assertTrue("<li><code>documentation/lib/diagrams/defines.iuml</code></li>" in usage) { usage }
-        assertTrue("System_Ext(app, &quot;Приложение&quot;" in usage) { usage }
+        assertTrue("System_Ext(app, &quot;Приложение&quot;" in usage.replace(Regex("</?span[^>]*>"), "")) { usage }
+        assertTrue("<span class=\"tok-meta\">!include</span>" in usage) { "the source is highlighted: $usage" }
 
         // auto: the sequence diagram is drawn in the browser, the C4 one needs library sprites and stays from the build
         val browser = Regex("class=\"plantuml-browser\" id=\"[^\"]+\" data-image=\"([^\"]+)\"").findAll(usage)
@@ -161,7 +162,7 @@ internal class DocumentationSitePluginTest {
             assertEquals(TaskOutcome.FROM_CACHE, cached.task(it)?.outcome) { cached.output }
         }
 
-        fixture.file("documentation/lib/how-to/usage.md").appendText("\nНовый абзац.\n")
+        fixture.file("documentation/lib/how-to/usage.md").appendText("\nНовый абзац ${System.nanoTime()}.\n")
         val changed = fixture.run(*tasks)
         assertEquals(TaskOutcome.SUCCESS, changed.task(":documentationSite")?.outcome) { changed.output }
         assertEquals(TaskOutcome.UP_TO_DATE, changed.task(":documentationRenderDiagrams")?.outcome) { changed.output }
@@ -200,7 +201,7 @@ internal class DocumentationSitePluginTest {
         fixture.run("documentationSite", "--rerun-tasks")
         assertEquals(first, fixture.site("_assets/build-stamp").readText())
 
-        fixture.file("documentation/lib/how-to/usage.md").appendText("\nНовый абзац.\n")
+        fixture.file("documentation/lib/how-to/usage.md").appendText("\nНовый абзац ${System.nanoTime()}.\n")
         fixture.run("documentationSite")
         val changed = fixture.site("_assets/build-stamp").readText()
         assertTrue(changed.matches(Regex("[0-9a-f]{64}")) && changed != first) { changed }

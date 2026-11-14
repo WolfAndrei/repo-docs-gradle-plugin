@@ -106,13 +106,21 @@ internal class SiteBuilder(
         sources.renderedDiagrams.forEach { (path, file) -> file.copyTo(outputDir.resolve(path), overwrite = true) }
         apiPages.forEach { page ->
             outputDir.resolve(page.path).apply { parentFile.mkdirs() }
-                .writeText(template.page(page.path, page.qualifiedTitle.ifEmpty { "API" }, page.content, PageStyle.SYMBOL))
+                .writeText(
+                    template.page(
+                        page.path,
+                        page.qualifiedTitle.ifEmpty { text["api"] },
+                        CodeHighlighter.highlightBlocks(page.content),
+                        PageStyle.SYMBOL,
+                    )
+                )
         }
 
         pages.values.forEach { page ->
             val htmlPath = SiteNavigation.htmlPath(page.path)
             val html = page.renderHtml { destination -> rewrite(page.path, destination, pages.keys, siteFiles) }
-            val content = SiteTemplate.decorateArticle(diagrams.decorate(page.path, html))
+            val decorated = SiteTemplate.decorateArticle(diagrams.decorate(page.path, html))
+            val content = CodeHighlighter.highlightBlocks(decorated)
             val style = if (isLibraryIndex(page.path)) PageStyle.LANDING else PageStyle.ARTICLE
             outputDir.resolve(htmlPath).apply {
                 parentFile.mkdirs()

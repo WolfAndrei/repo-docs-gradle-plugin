@@ -20,7 +20,7 @@
  */
 :root {
     --bg: #ffffff;
-    --bg-header: rgba(255, 255, 255, 0.78);
+    --bg-header: rgba(255, 255, 255, 0.86);
     --fg: #1d1d1f;
     --fg-2: #6e6e73;
     --fg-3: #86868b;
@@ -33,10 +33,17 @@
     --warning-fill: rgba(255, 149, 0, 0.1);
     --mark: rgba(255, 214, 10, 0.4);
     --shadow: 0 12px 40px rgba(0, 0, 0, 0.12), 0 1px 3px rgba(0, 0, 0, 0.06);
+    /* Code tokens; each has at least 4.5:1 contrast on --fill and on --bg. */
     --code-keyword: #9b2393;
     --code-type: #0f68a0;
     --code-string: #c41a16;
-    --code-comment: #6e7781;
+    --code-number: #1c00cf;
+    --code-comment: #5d6c79;
+    --code-meta: #643820;
+    --code-property: #7a5a00;
+    --code-variable: #326d74;
+    --code-inserted: #1a7f37;
+    --code-deleted: #b3261e;
     --kind-class: #8a5bd0;
     --kind-interface: #b8569f;
     --kind-object: #5d64d4;
@@ -58,7 +65,7 @@
 @media (prefers-color-scheme: dark) {
     :root {
         --bg: #161617;
-        --bg-header: rgba(22, 22, 23, 0.72);
+        --bg-header: rgba(22, 22, 23, 0.84);
         --fg: #f5f5f7;
         --fg-2: #a1a1a6;
         --fg-3: #8a8a8f;
@@ -74,7 +81,13 @@
         --code-keyword: #fc5fa3;
         --code-type: #5dd8ff;
         --code-string: #fc6a5d;
-        --code-comment: #7f8c98;
+        --code-number: #d0bf69;
+        --code-comment: #8d9aa7;
+        --code-meta: #fd8f3f;
+        --code-property: #d9c97c;
+        --code-variable: #67b7a4;
+        --code-inserted: #6bd68a;
+        --code-deleted: #ff8a80;
         --kind-class: #a77fe8;
         --kind-interface: #d27bbd;
         --kind-object: #7f86ec;
@@ -627,6 +640,50 @@ mark {
     font-size: inherit;
     overflow-wrap: normal;
     white-space: pre;
+}
+
+/* Highlighted code blocks, see CodeHighlighter. */
+
+.tok-keyword,
+.tok-tag {
+    color: var(--code-keyword);
+}
+
+.tok-type {
+    color: var(--code-type);
+}
+
+.tok-string {
+    color: var(--code-string);
+}
+
+.tok-number {
+    color: var(--code-number);
+}
+
+.tok-comment {
+    color: var(--code-comment);
+    font-style: italic;
+}
+
+.tok-meta {
+    color: var(--code-meta);
+}
+
+.tok-property {
+    color: var(--code-property);
+}
+
+.tok-variable {
+    color: var(--code-variable);
+}
+
+.tok-inserted {
+    color: var(--code-inserted);
+}
+
+.tok-deleted {
+    color: var(--code-deleted);
 }
 
 /* Tables: hairline rows, scrolling inside their own container. */
