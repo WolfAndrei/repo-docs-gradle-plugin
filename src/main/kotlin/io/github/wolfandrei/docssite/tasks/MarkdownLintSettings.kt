@@ -64,7 +64,7 @@ internal interface MarkdownLintSettings {
     @get:PathSensitive(PathSensitivity.RELATIVE)
     val configFile: RegularFileProperty
 
-    /** Configuration files rumdl finds in the repository root by itself; missing ones are skipped. */
+    /** Configuration files rumdl may find by itself for the pages; missing ones are skipped. */
     @get:InputFiles
     @get:PathSensitive(PathSensitivity.RELATIVE)
     val discoveredConfigFiles: ConfigurableFileCollection

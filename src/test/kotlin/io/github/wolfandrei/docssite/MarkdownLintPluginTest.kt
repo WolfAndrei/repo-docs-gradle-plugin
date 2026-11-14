@@ -110,6 +110,16 @@ internal class MarkdownLintPluginTest {
         val changed = fixture.run(*tasks)
         assertTrue("Reusing configuration cache" in changed.output) { changed.output }
         assertEquals(TaskOutcome.SUCCESS, changed.task(":documentationCheck")?.outcome) { changed.output }
+
+        // rumdl takes the configuration of the nearest directory of a page.
+        fixture.file("documentation/lib/how-to/usage.md").appendText("\nПробелы в конце   \n")
+        fixture.file("documentation/lib/how-to/.rumdl.toml")
+            .writeText("extends = \"../../../.rumdl.toml\"\n\n[global]\nextend-disable = [\"MD009\"]\n")
+        val nested = fixture.run(*tasks)
+        assertTrue("Reusing configuration cache" in nested.output) { nested.output }
+        assertEquals(TaskOutcome.SUCCESS, nested.task(":documentationCheck")?.outcome) { nested.output }
+        fixture.file("documentation/lib/how-to/.rumdl.toml").writeText("extends = \"../../../.rumdl.toml\"\n")
+        assertTrue("[MD009]" in fixture.run(*tasks, expectFailure = true).output)
     }
 
     @Test

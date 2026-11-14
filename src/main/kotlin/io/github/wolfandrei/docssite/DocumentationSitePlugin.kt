@@ -129,7 +129,7 @@ internal class DocumentationSitePlugin : Plugin<Project> {
             forbiddenCharacters.set(extension.checks.forbiddenCharacters)
             anchorStyle.set(extension.anchorStyle)
             checkCommittedDiagrams.set(extension.checks.committedDiagrams)
-            configureMarkdownLint(markdownLint, extension)
+            configureMarkdownLint(markdownLint, extension, pages)
             reportFile.set(layout.buildDirectory.file("docs-site-check/report.txt"))
         }
 
@@ -138,7 +138,7 @@ internal class DocumentationSitePlugin : Plugin<Project> {
             description = "Fixes the Markdown pages of the documentation in place with rumdl."
             repositoryRoot.set(layout.projectDirectory)
             this.pages.from(pages)
-            configureMarkdownLint(markdownLint, extension)
+            configureMarkdownLint(markdownLint, extension, pages)
         }
 
         tasks.named { it == "check" }.configureEach {
@@ -194,7 +194,11 @@ internal class DocumentationSitePlugin : Plugin<Project> {
         )
     }
 
-    private fun Project.configureMarkdownLint(settings: MarkdownLintSettings, extension: DocumentationSiteExtension) {
+    private fun Project.configureMarkdownLint(
+        settings: MarkdownLintSettings,
+        extension: DocumentationSiteExtension,
+        pages: FileCollection,
+    ) {
         val lint = extension.checks.markdownLint
         settings.enabled.set(lint.enabled)
         settings.executable.set(lint.executable)
@@ -202,7 +206,19 @@ internal class DocumentationSitePlugin : Plugin<Project> {
         settings.distributionUrl.set(lint.distributionUrl)
         settings.checksums.set(lint.checksums)
         settings.configFile.set(lint.configFile)
-        settings.discoveredConfigFiles.from(RUMDL_CONFIG_FILES.map { layout.projectDirectory.file(it) })
+        // rumdl takes the configuration of the nearest directory of a page that has one, up to the repository root.
+        val root = layout.projectDirectory.asFile
+        settings.discoveredConfigFiles.from(
+            pages.elements.map { locations ->
+                locations.asSequence()
+                    .flatMap { page ->
+                        generateSequence(page.asFile.parentFile) { it.parentFile }.takeWhile { it.startsWith(root) }
+                    }
+                    .distinct()
+                    .flatMap { directory -> RUMDL_CONFIG_FILES.map(directory::resolve) }
+                    .toList()
+            }
+        )
         // The plugin checks the links and the anchors itself, with the anchor rules of the site, and the line length
         // with its own exceptions: the same rules of rumdl would report the same problems twice.
         settings.disabledRules.set(
@@ -338,7 +354,7 @@ internal class DocumentationSitePlugin : Plugin<Project> {
         const val RUMDL_VERSION = RumdlDistribution.VERSION
         const val RUMDL_CACHE = "caches/docs-site/rumdl"
 
-        /** Configuration files rumdl finds in the repository root, inputs of the tasks. */
+        /** Configuration files rumdl finds in the directory of a page and above, inputs of the tasks. */
         val RUMDL_CONFIG_FILES = listOf(
             ".rumdl.toml",
             "rumdl.toml",
