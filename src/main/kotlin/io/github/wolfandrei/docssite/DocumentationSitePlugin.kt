@@ -22,6 +22,7 @@ import io.github.wolfandrei.docssite.plantuml.GraphvizValueSource
 import io.github.wolfandrei.docssite.tasks.AggregateApiReferenceTask
 import io.github.wolfandrei.docssite.tasks.BuildDocumentationSiteTask
 import io.github.wolfandrei.docssite.tasks.CheckDocumentationTask
+import io.github.wolfandrei.docssite.tasks.FormatDocumentationTask
 import io.github.wolfandrei.docssite.tasks.MarkdownLintSettings
 import io.github.wolfandrei.docssite.tasks.RenderPlantUmlTask
 import io.github.wolfandrei.docssite.tasks.ServeDocumentationSiteTask
@@ -46,7 +47,8 @@ import org.gradle.kotlin.dsl.register
  * - `documentationSite` builds the site in `build/docs-site`: README and the Markdown pages of `documentation` as
  *   HTML, the diagrams from their PlantUML sources, the interactive pages, the API reference and the search index;
  * - `documentationServe` serves it on `localhost` until Ctrl+C;
- * - `documentationCheck` checks links, anchors, diagrams and the style of the Markdown pages, also with rumdl.
+ * - `documentationCheck` checks links, anchors, diagrams and the style of the Markdown pages, also with rumdl;
+ * - `documentationFormat` fixes the Markdown pages in place with rumdl.
  *
  * The plugin configures only the root project: the API reference comes from the Dokka artifacts of the modules that
  * apply Dokka themselves, resolved by project dependencies.
@@ -129,6 +131,14 @@ internal class DocumentationSitePlugin : Plugin<Project> {
             checkCommittedDiagrams.set(extension.checks.committedDiagrams)
             configureMarkdownLint(markdownLint, extension)
             reportFile.set(layout.buildDirectory.file("docs-site-check/report.txt"))
+        }
+
+        tasks.register<FormatDocumentationTask>(FORMAT_TASK) {
+            group = GROUP
+            description = "Fixes the Markdown pages of the documentation in place with rumdl."
+            repositoryRoot.set(layout.projectDirectory)
+            this.pages.from(pages)
+            configureMarkdownLint(markdownLint, extension)
         }
 
         tasks.named { it == "check" }.configureEach {
@@ -303,6 +313,7 @@ internal class DocumentationSitePlugin : Plugin<Project> {
         const val SITE_TASK = "documentationSite"
         const val SERVE_TASK = "documentationServe"
         const val CHECK_TASK = "documentationCheck"
+        const val FORMAT_TASK = "documentationFormat"
         const val RENDER_TASK = "documentationRenderDiagrams"
         const val API_TASK = "documentationApiReference"
         const val PLANTUML_CONFIGURATION = "documentationPlantUml"

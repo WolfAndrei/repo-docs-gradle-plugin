@@ -111,4 +111,45 @@ internal class MarkdownLintPluginTest {
         assertTrue("Reusing configuration cache" in changed.output) { changed.output }
         assertEquals(TaskOutcome.SUCCESS, changed.task(":documentationCheck")?.outcome) { changed.output }
     }
+
+    @Test
+    fun `format fixes the pages in place and aligns tables with Cyrillic text`() {
+        fixture.file(".rumdl.toml").appendText("\n[MD060]\nenabled = true\nstyle = \"aligned\"\n")
+        fixture.file("documentation/lib/how-to/table.md").writeText(
+            """
+            |[⇦&nbsp;К&nbsp;оглавлению](../index.md)
+            |
+            |# Таблица
+            |
+            |Пробелы в конце
+            |
+            || Параметр | Описание |
+            ||---|---|
+            || a | Короткий |
+            || длинное имя параметра | x |
+            |
+            """.trimMargin()
+        )
+        fixture.file("documentation/lib/index.md").appendText("- [Таблица](how-to/table.md) - таблица.\n")
+
+        fixture.run("documentationFormat", "--configuration-cache")
+
+        assertEquals(
+            """
+            |[⇦&nbsp;К&nbsp;оглавлению](../index.md)
+            |
+            |# Таблица
+            |
+            |Пробелы в конце
+            |
+            || Параметр              | Описание |
+            || --------------------- | -------- |
+            || a                     | Короткий |
+            || длинное имя параметра | x        |
+            |
+            """.trimMargin(),
+            fixture.file("documentation/lib/how-to/table.md").readText(),
+        )
+        assertTrue("no problems" in fixture.run("documentationCheck").output)
+    }
 }

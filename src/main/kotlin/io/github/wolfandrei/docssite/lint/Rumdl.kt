@@ -52,6 +52,15 @@ internal class Rumdl(
         return RumdlOutput(findings, messages)
     }
 
+    /** Fixes what rumdl can fix in [pages], `rumdl fmt`; returns the lines rumdl printed. */
+    fun format(pages: List<String>): List<String> {
+        return batches(pages).flatMap { batch ->
+            val result = run(listOf("fmt") + options(), batch)
+            if (result.exitCode != 0) throw failure(result)
+            result.stdout.lines().filter { it.isNotBlank() } + result.stderrLines()
+        }
+    }
+
     private fun options(): List<String> {
         val options = mutableListOf("--no-cache", "--color", "never")
         configFile?.let { options += listOf("--config", it.absolutePath) }
