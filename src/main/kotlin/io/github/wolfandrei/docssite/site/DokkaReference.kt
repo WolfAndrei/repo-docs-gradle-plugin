@@ -395,7 +395,7 @@ internal class DokkaReference(
 
         private fun platformClass(name: String): String = when (name) {
             "common" -> "common"
-            "android", "jvm", "desktopJvm" -> "jvm"
+            "android", "jvm", "desktopJvm", "main" -> "jvm"
             "js", "wasm", "wasmJs" -> "js"
             else -> "native"
         }
