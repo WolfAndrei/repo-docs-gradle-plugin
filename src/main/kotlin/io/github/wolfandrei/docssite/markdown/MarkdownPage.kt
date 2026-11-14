@@ -70,6 +70,7 @@ internal class MarkdownPage(
     val path: String,
     val source: String,
     anchorStyle: AnchorStyle = AnchorStyle.GITLAB,
+    private val contentsHeadings: Set<String> = DEFAULT_CONTENTS_HEADINGS,
 ) {
     private val document: Node = PARSER.parse(source)
     private val headingOf = IdentityHashMap<Heading, PageHeading>()
@@ -77,7 +78,13 @@ internal class MarkdownPage(
     val headings: List<PageHeading>
     val links: List<PageLink>
 
-    /** The first heading of the first level, or the name of the file. */
+    /**
+     * Title from the headings: the first heading of the first level, otherwise the first heading that is not a table
+     * of contents (see [isContentsHeading]); `null` for a page without such headings.
+     */
+    val headingTitle: String?
+
+    /** [headingTitle], or the name of the file without the extension. */
     val title: String
 
     /** Lines of code blocks, counting from 1: the style checks skip them. */
@@ -138,7 +145,9 @@ internal class MarkdownPage(
         this.links = links
         this.codeLines = codeLines
         this.tableLines = tableLines
-        title = headings.firstOrNull { it.level == 1 }?.text ?: path.substringAfterLast('/').removeSuffix(".md")
+        headingTitle = headings.firstOrNull { it.level == 1 }?.text
+            ?: headings.firstOrNull { !isContentsHeading(it.text) }?.text
+        title = headingTitle ?: path.substringAfterLast('/').removeSuffix(".md")
     }
 
     /** Text of the page split by its headings. */
@@ -168,8 +177,10 @@ internal class MarkdownPage(
     }
 
     /**
-     * Structure of the page as a table of contents: a heading below the first level starts a group, and each list item
-     * that starts with a link is an entry; the links of a nested list are its children.
+     * Structure of the page as a table of contents: a heading below the first level starts a group, unless it is the
+     * heading of a table of contents of the page itself, and each list item with a link to a file of the repository
+     * is an entry of its first such link, wherever it stands in the item (`[Usage](usage.md) - ...` and
+     * `Then set it up - see [here](usage.md)` alike); the links of a nested list are its children.
      */
     fun outline(): List<OutlineEntry> {
         val entries = mutableListOf<OutlineEntry>()
@@ -177,7 +188,11 @@ internal class MarkdownPage(
 
         while (node != null) {
             when (node) {
-                is Heading -> if (node.level > 1) entries += OutlineEntry.Group(headingOf.getValue(node).text)
+                is Heading -> {
+                    val text = headingOf.getValue(node).text
+                    if (node.level > 1 && !isContentsHeading(text)) entries += OutlineEntry.Group(text)
+                }
+
                 is ListBlock -> entries += listLinks(node)
             }
             node = node.next
@@ -186,12 +201,52 @@ internal class MarkdownPage(
         return entries
     }
 
+    /** Whether [text] is the heading of a table of contents of the page itself, such as «Contents». */
+    fun isContentsHeading(text: String): Boolean = contentsHeadings.any { it.equals(text.trim(), ignoreCase = true) }
+
+    /**
+     * Number of words of the page outside lists, headings, quotes and code: its own text, as opposed to the text of a
+     * page that only lists other pages. A paragraph of links or pictures only does not count.
+     */
+    fun proseWords(): Int {
+        var words = 0
+        var node = document.firstChild
+        while (node != null) {
+            val counts = node is Paragraph && !onlyLinksOrPictures(node) || node is CustomBlock
+            if (counts) words += plainText(node).split(WHITESPACE).count { it.isNotBlank() }
+            node = node.next
+        }
+        return words
+    }
+
+    private fun onlyLinksOrPictures(paragraph: Paragraph): Boolean =
+        generateSequence(paragraph.firstChild) { it.next }.all { child ->
+            child is Link || child is Image || child is HtmlInline || child is SoftLineBreak ||
+                child is HardLineBreak || child is Text && child.literal.isBlank()
+        }
+
+    /**
+     * The first link of [paragraph] to another file of the repository: links to an anchor of the page itself and
+     * external addresses do not count.
+     */
+    private fun firstPageLink(paragraph: Paragraph): Link? {
+        var found: Link? = null
+        paragraph.accept(object : AbstractVisitor() {
+            override fun visit(link: Link) {
+                if (found == null && !link.destination.startsWith("#") && RelativeLink.resolve(path, link.destination) != null) {
+                    found = link
+                }
+            }
+        })
+        return found
+    }
+
     private fun listLinks(list: ListBlock): List<OutlineEntry.Entry> {
         val entries = mutableListOf<OutlineEntry.Entry>()
         var item = list.firstChild
 
         while (item != null) {
-            val link = (item.firstChild as? Paragraph)?.firstChild as? Link
+            val link = (item.firstChild as? Paragraph)?.let(::firstPageLink)
             val nested = generateSequence(item.firstChild) { it.next }.filterIsInstance<ListBlock>()
                 .flatMap { listLinks(it) }
                 .toList()
@@ -278,6 +333,11 @@ internal class MarkdownPage(
     }
 
     companion object {
+        /** Headings of a table of contents of the page: they open no group of the sidebar and give no title. */
+        val DEFAULT_CONTENTS_HEADINGS = setOf("Contents", "Table of contents", "Содержание", "Оглавление")
+
+        private val WHITESPACE = Regex("\\s+")
+
         private val EXTENSIONS: List<Extension> = listOf(
             TablesExtension.create(),
             StrikethroughExtension.create(),

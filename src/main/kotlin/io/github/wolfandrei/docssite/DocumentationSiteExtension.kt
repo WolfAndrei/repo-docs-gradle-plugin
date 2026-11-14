@@ -61,13 +61,6 @@ abstract class DocumentationSiteExtension @Inject constructor(objects: ObjectFac
     abstract val language: Property<String>
 
     /**
-     * Titles of the sidebar groups by the heading of the table of contents, case-insensitive: `how-to`, `reference`,
-     * `explanation`, `tutorials`, `adr`, `diagrams`, `interactive`. The [language] gives the defaults, such as
-     * `Reference`; an entry here replaces one of them or names another heading.
-     */
-    abstract val navigationTitles: MapProperty<String, String>
-
-    /**
      * Rules of the heading ids: `gitlab` (default) or `github`. They differ only for a heading with a run of
      * hyphens or spaces, such as `A - B`, and for a heading of digits only.
      */
@@ -77,6 +70,8 @@ abstract class DocumentationSiteExtension @Inject constructor(objects: ObjectFac
 
     val apiReference: ApiReference = objects.newInstance(ApiReference::class.java)
 
+    val navigation: Navigation = objects.newInstance(Navigation::class.java)
+
     val checks: Checks = objects.newInstance(Checks::class.java)
 
     val serve: Serve = objects.newInstance(Serve::class.java)
@@ -84,6 +79,8 @@ abstract class DocumentationSiteExtension @Inject constructor(objects: ObjectFac
     fun plantUml(action: Action<PlantUml>) = action.execute(plantUml)
 
     fun apiReference(action: Action<ApiReference>) = action.execute(apiReference)
+
+    fun navigation(action: Action<Navigation>) = action.execute(navigation)
 
     fun checks(action: Action<Checks>) = action.execute(checks)
 
@@ -126,6 +123,54 @@ abstract class DocumentationSiteExtension @Inject constructor(objects: ObjectFac
 
         /** Modules that are not documented, by Gradle path; a path also excludes its nested modules. */
         val excludedModules: SetProperty<String>
+
+        /**
+         * Directories of the libraries under the documentation directory by Dokka module name, such as
+         * `"lib" to "greetings"`; by default a module belongs to the directory of its own name. The API of a module
+         * goes under its library in the sidebar, and the inline code of the pages of the library links to it first.
+         */
+        val libraries: MapProperty<String, String>
+
+        /**
+         * Headings of the group or the entry of a library that gets its API, case-insensitive prefixes; by default
+         * `Reference` and `Справочник`, the title of the `reference` group in the language counts too.
+         */
+        val referenceHeadings: ListProperty<String>
+    }
+
+    /** The sidebar: how the tables of contents are read. */
+    interface Navigation {
+        /**
+         * Titles of the sidebar groups by the heading of the table of contents, case-insensitive: `how-to`,
+         * `reference`, `explanation`, `tutorials`, `adr`, `diagrams`, `interactive`. The language gives the
+         * defaults, such as `Reference`; an entry here replaces one of them or names another heading.
+         */
+        val groupTitles: MapProperty<String, String>
+
+        /**
+         * Where the titles of the entries come from: `heading` (default) - the heading of the page, the link text for a
+         * page without headings; `link` - the link text, the heading for a link such as «here».
+         */
+        val titleSource: Property<String>
+
+        /**
+         * Globs of the pages that are tables of contents and are expanded in place; a pattern without `/` matches the
+         * file name, another one the path from the repository root. By default `index.md`, `README.md`,
+         * `*-index.md`, `*_index.md`.
+         */
+        val hubs: ListProperty<String>
+
+        /**
+         * Whether a page that links to at least 2 pages not listed yet and has at most 60 words of its own text is a
+         * table of contents too; by default `true`.
+         */
+        val detectHubs: Property<Boolean>
+
+        /**
+         * Headings of a table of contents inside a page, such as `## Contents`: they open no sidebar group and give
+         * no title. By default `Contents`, `Table of contents`, `Содержание`, `Оглавление`.
+         */
+        val contentsHeadings: ListProperty<String>
     }
 
     /** Settings of `documentationCheck`. */

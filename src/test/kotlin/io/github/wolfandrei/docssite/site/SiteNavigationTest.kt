@@ -62,7 +62,7 @@ internal class SiteNavigationTest {
 
     private fun navigation(language: String = "en", titles: Map<String, String> = emptyMap()): List<NavigationItem> {
         val modules = listOf(ApiModuleEntry("lib", "lib"), ApiModuleEntry("tools", "tools"))
-        return SiteNavigation(pages, setOf("doc/lib/interactive/modes.html"), UiText.of(language), titles).build(
+        return SiteNavigation(pages, setOf("doc/lib/interactive/modes.html"), UiText.of(language), NavigationOptions(titles)).build(
             readme = null,
             index = "doc/index.md",
             apiModules = modules,
@@ -129,4 +129,119 @@ internal class SiteNavigationTest {
         )
         assertEquals("API", lib.children[1].children.last().title) { "the reference is found by its new title" }
     }
+
+    /** A folder per plugin with its own `<name>-index.md` hub whose items read «see [here](...)». */
+    private val pluginLayout = listOf(
+        MarkdownPage(
+            "documentation/index.md",
+            """
+            |[Back](../README.md)
+            |
+            |# Plugins
+            |
+            |## Infrastructure
+            |
+            |- [secrets-plugin](secrets/secrets-plugin-index.md) - secrets at build time
+            |- [tools](tools/overview.md) - helper tasks
+            |- [essay](essay/essay.md) - a long text
+            """.trimMargin(),
+        ),
+        MarkdownPage(
+            "documentation/secrets/secrets-plugin-index.md",
+            """
+            |[Back to contents](../index.md)
+            |
+            |## Contents
+            |
+            |<img src="./imgs/flow.png" width="40%"/>
+            |
+            |- First set up the environment - see [here](./secrets-requirements.md)
+            |- Then apply the plugin - see [here](./secrets-usage.md)
+            |- FAQ - see [here](./secrets-faq.md)
+            """.trimMargin(),
+        ),
+        MarkdownPage(
+            "documentation/secrets/secrets-requirements.md",
+            "## Contents\n\n- [Environment setup](#environment-setup)\n\n## Environment setup\n\nText.\n",
+        ),
+        MarkdownPage("documentation/secrets/secrets-usage.md", "# Secrets plugin usage\n\nText.\n"),
+        MarkdownPage("documentation/secrets/secrets-faq.md", "Questions and answers without headings.\n"),
+        MarkdownPage("documentation/secrets/secrets-notes.md", "# Notes on secrets\n"),
+        MarkdownPage(
+            "documentation/tools/overview.md",
+            "# Tools\n\nTasks of the plugin.\n\n- [Copy](copy.md)\n- [Clean](clean.md)\n",
+        ),
+        MarkdownPage("documentation/tools/copy.md", "# Copy task\n"),
+        MarkdownPage("documentation/tools/clean.md", "# Clean task\n"),
+        MarkdownPage(
+            "documentation/essay/essay.md",
+            "# Essay\n\n" + "A sentence of real prose that explains the design in some detail. ".repeat(10) +
+                "\n\n- [Part one](part-one.md)\n- [Part two](part-two.md)\n",
+        ),
+        MarkdownPage("documentation/essay/part-one.md", "# Part one\n"),
+        MarkdownPage("documentation/essay/part-two.md", "# Part two\n"),
+    ).associateBy { it.path }
+
+    private fun pluginNavigation(options: NavigationOptions = NavigationOptions()): List<NavigationItem> =
+        SiteNavigation(pluginLayout, emptySet(), UiText.of("en"), options).build(readme = null, index = "documentation/index.md")
+
+    @Test
+    fun `a name-index hub expands in place, its entries take the headings of their pages`() {
+        val navigation = pluginNavigation()
+
+        assertEquals(
+            """
+            |Plugins
+            |  Infrastructure
+            |    secrets-plugin
+            |      Environment setup
+            |      Secrets plugin usage
+            |      secrets-faq
+            |    Tools
+            |      Copy task
+            |      Clean task
+            |    Essay
+            |
+            """.trimMargin(),
+            navigation.first().outline(),
+        )
+        assertEquals("documentation/secrets/secrets-plugin-index.html", navigation.find("secrets-plugin")?.path)
+    }
+
+    @Test
+    fun `pages outside the tables of contents show their headings, not their paths`() {
+        val others = pluginNavigation().last()
+
+        assertEquals("Other pages", others.title)
+        assertEquals(listOf("Part one", "Part two", "Notes on secrets"), others.children.map { it.title })
+    }
+
+    @Test
+    fun `hubs can be named explicitly, detection turned off, and titles taken from links`() {
+        val navigation = pluginNavigation(
+            NavigationOptions(
+                titleSource = TitleSource.LINK,
+                hubPatterns = listOf("*-index.md", "documentation/essay/essay.md"),
+                detectHubs = false,
+            )
+        )
+
+        assertEquals(
+            """
+            |Plugins
+            |  Infrastructure
+            |    secrets-plugin
+            |      Environment setup
+            |      Secrets plugin usage
+            |      secrets-faq
+            |    tools
+            |    essay
+            |      Part one
+            |      Part two
+            |
+            """.trimMargin(),
+            navigation.first().outline(),
+        )
+    }
 }
+

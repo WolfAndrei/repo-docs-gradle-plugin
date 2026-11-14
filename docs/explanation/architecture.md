@@ -90,18 +90,29 @@ with a run of hyphens or spaces, `A - B` is `a-b` on GitLab and `a---b` on GitHu
 The sidebar is built from the table of contents `documentation/index.md`:
 
 - a heading of the second or a lower level opens a group; its title comes from
-  [navigationTitles](../reference/configuration.md#the-documentationsite-block) when the heading is a known one,
-  such as `How-to` or `Reference`;
-- a list item that starts with a link is an entry, a nested list gives nested entries;
-- a link to the `index.md` of a library expands it in place.
+  [navigation.groupTitles](../reference/configuration.md#navigation) when the heading is a known one, such as
+  `How-to` or `Reference`; a heading of an in-page contents list, such as `## Contents`, opens no group;
+- a list item with a link to a file of the repository is an entry, wherever the link stands in the item, so
+  `[Usage](usage.md) - ...` and `Then apply the plugin - see [here](usage.md)` both work; a nested list gives
+  nested entries;
+- an entry shows the heading of its page, so that a link text such as «here» does not become a title;
+- a page that is a table of contents itself (a **hub**) is expanded in place: its entries become nested entries.
 
-README is above the table of contents. The API of a Dokka module goes under the library of the same name, the
-directory `documentation/<module>/`: as `API -> package -> types` (nested types under their outer type, each with a
-badge of its kind) inside the group named `Reference`, under its entry if the group has one entry, or at the end
-of the library without such a group. Modules without a library form the top-level group «API». The interactive
-pages of a library that its `index.md` does not mention go into the group «Interactive pages» of the library. The
-pages that no table of contents mentions are in «Other pages». A page that the sidebar does not list, such as a
-member of a type, highlights its closest listed parent.
+A hub is a page named `index.md`, `README.md`, `*-index.md` or `*_index.md`, or a page that links to at least 2
+Markdown pages that the sidebar does not list yet and has at most 60 words of its own text. The second rule finds a
+page such as «First set up the environment - see here; then apply the plugin - see here» without any naming
+convention, and leaves out an article that happens to end with a list of links. Each page is listed once: a hub
+lists only the pages that are not listed yet, so the tables of contents cannot form a cycle.
+
+README is above the table of contents. The API of a Dokka module goes under its library, the directory
+`documentation/<module>/` (or the one of `apiReference.libraries`): as `API -> package -> types` (nested types under
+their outer type, each with a badge of its kind) inside the group named `Reference`, under its entry if the group
+has one entry, or at the end of the page of the library without such a group. The page of a library is the first
+entry whose page lies directly in the library directory. Modules without a library form the top-level group «API».
+The interactive pages of a library that no table of contents mentions go into its group «Interactive pages». The
+pages that no table of contents mentions are in «Other pages», titled by their headings. A page that the sidebar
+does not list, such as a member of a type, highlights its closest listed parent. All these conventions and their
+settings are listed in [Layout conventions](../reference/configuration.md#layout-conventions).
 
 ## PlantUML diagrams
 

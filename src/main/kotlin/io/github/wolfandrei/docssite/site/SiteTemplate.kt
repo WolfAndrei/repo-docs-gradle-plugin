@@ -121,18 +121,25 @@ internal class SiteTemplate(
         private val TABLE_OPEN = Regex("<table>")
         private val TABLE_CLOSE = Regex("</table>")
         private val WARNING = Regex("<blockquote>\\s*<p>(?:\u26A0\uFE0F?|&#9888;)\\s*")
+        private val WARNING_WORD = Regex(
+            "<blockquote>(\\s*<p><strong>(?:ВНИМАНИЕ|Внимание|Важно|WARNING|Warning|Important|IMPORTANT))"
+        )
+        private val BACK_LINK = Regex("\\A\\s*<p>(<a href=\"[^\"]*\">[^<]*</a>)</p>")
         private val NOTE = Regex("<blockquote>(\\s*<p>(?:<strong>)?(?:Примечание|Note))")
 
         /**
-         * HTML of a Markdown page for the site layout: each table scrolls in its own container, a quote that starts
-         * with `⚠️` is a warning and a quote that starts with «Примечание» is a note; the warning sign is dropped, the
-         * style marks the callout.
+         * HTML of a Markdown page for the site layout: each table scrolls in its own container; a quote that starts
+         * with `⚠️` or a bold «Warning», «Important», «Внимание», «Важно» is a warning and a quote that starts with
+         * «Note» or «Примечание» is a note (the warning sign is dropped, the style marks the callout); a first
+         * paragraph that is a single link, such as `[⇦ Contents](../index.md)`, is a back link.
          */
         fun decorateArticle(html: String): String = html
             .replace(TABLE_OPEN, "<div class=\"table-wrap\"><table>")
             .replace(TABLE_CLOSE, "</table></div>")
             .replace(WARNING, "<blockquote class=\"callout callout-warning\"><p>")
+            .replace(WARNING_WORD, "<blockquote class=\"callout callout-warning\">$1")
             .replace(NOTE, "<blockquote class=\"callout callout-note\">$1")
+            .replace(BACK_LINK, "<p class=\"back-link\">$1</p>")
 
         /** Prefix that leads from the page [path] to the site root: `a/b.html` -> `../`. */
         fun rootPrefix(path: String): String = "../".repeat(path.count { it == '/' })

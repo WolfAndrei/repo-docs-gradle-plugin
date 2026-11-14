@@ -23,6 +23,8 @@ import io.github.wolfandrei.docssite.tasks.BuildDocumentationSiteTask
 import io.github.wolfandrei.docssite.tasks.CheckDocumentationTask
 import io.github.wolfandrei.docssite.tasks.RenderPlantUmlTask
 import io.github.wolfandrei.docssite.tasks.ServeDocumentationSiteTask
+import io.github.wolfandrei.docssite.markdown.MarkdownPage
+import io.github.wolfandrei.docssite.site.NavigationOptions
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.artifacts.Configuration
@@ -93,7 +95,13 @@ internal class DocumentationSitePlugin : Plugin<Project> {
             indexPath.set(extension.index.map { it.asFile.relativeTo(rootDir).invariantSeparatorsPath })
             sourceBrowseUrl.set(extension.sourceBrowseUrl)
             language.set(extension.language)
-            navigationTitles.set(extension.navigationTitles)
+            groupTitles.set(extension.navigation.groupTitles)
+            titleSource.set(extension.navigation.titleSource)
+            hubPatterns.set(extension.navigation.hubs)
+            detectHubs.set(extension.navigation.detectHubs)
+            contentsHeadings.set(extension.navigation.contentsHeadings)
+            libraries.set(extension.apiReference.libraries)
+            referenceHeadings.set(extension.apiReference.referenceHeadings)
             anchorStyle.set(extension.anchorStyle)
             outputDirectory.set(extension.outputDirectory)
         }
@@ -149,7 +157,13 @@ internal class DocumentationSitePlugin : Plugin<Project> {
         extension.checks.lineLengthInTables.convention(false)
         extension.checks.forbiddenCharacters.convention(emptyList())
         extension.language.convention("en")
-        extension.navigationTitles.convention(emptyMap())
+        extension.navigation.groupTitles.convention(emptyMap())
+        extension.navigation.titleSource.convention("heading")
+        extension.navigation.hubs.convention(NavigationOptions.DEFAULT_HUB_PATTERNS)
+        extension.navigation.detectHubs.convention(true)
+        extension.navigation.contentsHeadings.convention(MarkdownPage.DEFAULT_CONTENTS_HEADINGS.toList())
+        extension.apiReference.libraries.convention(emptyMap())
+        extension.apiReference.referenceHeadings.convention(NavigationOptions.DEFAULT_REFERENCE_HEADINGS)
         extension.anchorStyle.convention("gitlab")
         extension.checks.committedDiagrams.convention(true)
         extension.checks.excludedDirectories.convention(RepositoryPathsValueSource.DEFAULT_EXCLUDED_DIRECTORIES)

@@ -67,7 +67,8 @@ internal class DocumentationSources(
 
 /** Checks the links, the style of the Markdown pages and the diagrams. */
 internal class DocumentationChecker(private val sources: DocumentationSources) {
-    private val pages = sources.pages.mapValues { (path, file) -> MarkdownPage(path, file.readText(), sources.anchorStyle) }
+    private val pages = sources.pages.mapValues { (path, file) -> MarkdownPage(path, file.readText(), sources.anchorStyle)
+    }
 
     fun check(): List<DocumentationProblem> {
         val problems = mutableListOf<DocumentationProblem>()

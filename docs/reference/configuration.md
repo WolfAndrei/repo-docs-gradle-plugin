@@ -9,6 +9,8 @@ site](../how-to/usage.md).
 - [The documentationSite block](#the-documentationsite-block)
 - [plantUml](#plantuml)
 - [apiReference](#apireference)
+- [navigation](#navigation)
+- [Layout conventions](#layout-conventions)
 - [checks](#checks)
 - [serve](#serve)
 - [Tasks](#tasks)
@@ -21,18 +23,17 @@ site](../how-to/usage.md).
 
 Paths are relative to the directory of the root project.
 
-| Property                 | Type                          | Default                  | Purpose                                                     |
-|--------------------------|-------------------------------|--------------------------|-------------------------------------------------------------|
-| `title`                  | `Property<String>`            | name of the root project | Title in the header of every page                           |
-| `readme`                 | `RegularFileProperty`         | `README.md`              | Home page; skipped if the file is missing                   |
-| `documentationDirectory` | `DirectoryProperty`           | `documentation`          | Directory of the documentation                              |
-| `index`                  | `RegularFileProperty`         | `documentation/index.md` | Table of contents, the root of the sidebar                  |
-| `additionalPages`        | `ConfigurableFileCollection`  | empty                    | Markdown pages outside the documentation, such as READMEs   |
-| `outputDirectory`        | `DirectoryProperty`           | `build/docs-site`        | Directory of the site                                       |
-| `sourceBrowseUrl`        | `Property<String>`            | not set                  | Address prefix of the repository files that are not on site |
-| `language`               | `Property<String>`            | `en`                     | Language of the interface: `en` or `ru`                     |
-| `navigationTitles`       | `MapProperty<String, String>` | empty                    | Titles of the sidebar groups by heading, over the defaults  |
-| `anchorStyle`            | `Property<String>`            | `gitlab`                 | Rules of the heading ids: `gitlab` or `github`              |
+| Property                 | Type                         | Default                  | Purpose                                                     |
+|--------------------------|------------------------------|--------------------------|-------------------------------------------------------------|
+| `title`                  | `Property<String>`           | name of the root project | Title in the header of every page                           |
+| `readme`                 | `RegularFileProperty`        | `README.md`              | Home page; skipped if the file is missing                   |
+| `documentationDirectory` | `DirectoryProperty`          | `documentation`          | Directory of the documentation                              |
+| `index`                  | `RegularFileProperty`        | `documentation/index.md` | Table of contents, the root of the sidebar                  |
+| `additionalPages`        | `ConfigurableFileCollection` | empty                    | Markdown pages outside the documentation, such as READMEs   |
+| `outputDirectory`        | `DirectoryProperty`          | `build/docs-site`        | Directory of the site                                       |
+| `sourceBrowseUrl`        | `Property<String>`           | not set                  | Address prefix of the repository files that are not on site |
+| `language`               | `Property<String>`           | `en`                     | Language of the interface: `en` or `ru`                     |
+| `anchorStyle`            | `Property<String>`           | `gitlab`                 | Rules of the heading ids: `gitlab` or `github`              |
 
 `sourceBrowseUrl` has the form `https://gitlab.example.com/group/repo/-/blob/main/`: a link to
 `lib/build.gradle.kts` becomes `<sourceBrowseUrl>lib/build.gradle.kts`. Without it such a link stays relative and
@@ -40,32 +41,6 @@ only `documentationServe` opens it, from the repository.
 
 `language` sets every string of the interface: the header, the search, the sidebar groups, the sections and kinds of
 the API pages, the diagram buttons. The pages themselves are not translated.
-
-`navigationTitles` maps a heading of a table of contents, compared case-insensitively, to the title of its sidebar
-group. The defaults of the language:
-
-| Heading                 | `en`                   | `ru`                   |
-|-------------------------|------------------------|------------------------|
-| `how-to`, `how to`      | How-to guides          | Инструкции             |
-| `reference`             | Reference              | Справочник             |
-| `explanation`           | Explanation            | Устройство             |
-| `tutorials`, `tutorial` | Tutorials              | Обучение               |
-| `adr`                   | Architecture decisions | Архитектурные решения  |
-| `diagrams`              | Diagrams               | Схемы                  |
-| `interactive`           | Interactive pages      | Интерактивные страницы |
-
-An entry of `navigationTitles` replaces a default or names another heading:
-
-```kotlin
-documentationSite {
-    navigationTitles.put("explanation", "Design")
-    navigationTitles.put("Background", "Theory")
-}
-```
-
-`interactive` is also the title of the group that lists the interactive pages of a library that its `index.md`
-does not mention. A group named as `reference` gets the API of the library, see
-[Sidebar](../explanation/architecture.md#sidebar).
 
 `anchorStyle` selects the rules of [Heading anchors](../explanation/architecture.md#heading-anchors).
 
@@ -100,14 +75,102 @@ Without the npm package every diagram is drawn at build time and `documentationS
 
 ## apiReference
 
-| Property          | Type                  | Default | Purpose                                                |
-|-------------------|-----------------------|---------|--------------------------------------------------------|
-| `enabled`         | `Property<Boolean>`   | `true`  | Whether the site has the API reference                 |
-| `modules`         | `SetProperty<String>` | empty   | If not empty, only these modules are documented        |
-| `excludedModules` | `SetProperty<String>` | empty   | Excluded modules; a path also excludes its nested ones |
+| Property            | Type                          | Default                   | Purpose                                                |
+|---------------------|-------------------------------|---------------------------|--------------------------------------------------------|
+| `enabled`           | `Property<Boolean>`           | `true`                    | Whether the site has the API reference                 |
+| `modules`           | `SetProperty<String>`         | empty                     | If not empty, only these modules are documented        |
+| `excludedModules`   | `SetProperty<String>`         | empty                     | Excluded modules; a path also excludes its nested ones |
+| `libraries`         | `MapProperty<String, String>` | empty                     | Library directory by Dokka module name                 |
+| `referenceHeadings` | `ListProperty<String>`        | `Reference`, `Справочник` | Headings of the group that gets the API                |
 
 Only the modules that apply `org.jetbrains.dokka` themselves are in the reference; the root project only if it
 applies Dokka too. `modules` and `excludedModules` take Gradle paths such as `:lib`.
+
+`libraries` maps a Dokka module to its directory under the documentation directory when the names differ:
+`libraries.put("lib", "greetings")` puts the API of `lib` under `documentation/greetings/` and links the inline code
+of its pages to `lib` first. `referenceHeadings` are case-insensitive prefixes; the title of the `reference` group
+in the language counts too.
+
+## navigation
+
+| Property           | Type                          | Default                                                     | Purpose                                        |
+|--------------------|-------------------------------|-------------------------------------------------------------|------------------------------------------------|
+| `groupTitles`      | `MapProperty<String, String>` | empty                                                       | Titles of the sidebar groups by heading        |
+| `titleSource`      | `Property<String>`            | `heading`                                                   | Title of an entry: `heading` or `link`         |
+| `hubs`             | `ListProperty<String>`        | `index.md`, `README.md`, `*-index.md`, `*_index.md`         | Globs of the tables of contents                |
+| `detectHubs`       | `Property<Boolean>`           | `true`                                                      | Whether a page of links is a table of contents |
+| `contentsHeadings` | `ListProperty<String>`        | `Contents`, `Table of contents`, `Содержание`, `Оглавление` | Headings of an in-page contents list           |
+
+`groupTitles` maps a heading of a table of contents, compared case-insensitively, to the title of its sidebar group.
+The defaults of the language:
+
+| Heading                 | `en`                   | `ru`                   |
+|-------------------------|------------------------|------------------------|
+| `how-to`, `how to`      | How-to guides          | Инструкции             |
+| `reference`             | Reference              | Справочник             |
+| `explanation`           | Explanation            | Устройство             |
+| `tutorials`, `tutorial` | Tutorials              | Обучение               |
+| `adr`                   | Architecture decisions | Архитектурные решения  |
+| `diagrams`              | Diagrams               | Схемы                  |
+| `interactive`           | Interactive pages      | Интерактивные страницы |
+
+`interactive` is also the title of the group that lists the interactive pages of a library that no table of
+contents mentions.
+
+```kotlin
+documentationSite {
+    navigation {
+        groupTitles.put("explanation", "Design")
+        hubs.add("docs/guide.md")
+        titleSource.set("link")
+    }
+}
+```
+
+`titleSource`:
+
+- `heading` - the first-level heading of the page, otherwise its first heading that is not in `contentsHeadings`,
+  otherwise the link text, otherwise the file name without `.md`;
+- `link` - the link text, otherwise as `heading`.
+
+A link text that says nothing about the page, such as `here`, `click here`, `link`, `здесь`, `тут`, `подробнее`, is
+skipped in both cases.
+
+`hubs`: a pattern without `/` matches the file name, another one the path from the repository root. With
+`detectHubs` a page is a table of contents also when it links to at least 2 Markdown pages that the sidebar does not
+list yet and has at most 60 words of its own text: paragraphs and tables count; lists, headings, quotes, code and
+paragraphs of links or pictures only do not. The rules of the sidebar are in
+[Sidebar](../explanation/architecture.md#sidebar).
+
+`contentsHeadings`: a heading such as `## Contents` before an in-page list of anchors opens no sidebar group and is
+never the title of the page.
+
+## Layout conventions
+
+What the plugin expects from the layout of the documentation, and how to change it.
+
+| Convention                                                                                       | Override                                   |
+|--------------------------------------------------------------------------------------------------|--------------------------------------------|
+| The documentation is in `documentation/`, its table of contents is `index.md`                    | `documentationDirectory`, `index`          |
+| README is the home page                                                                          | `readme`                                   |
+| A table of contents is `index.md`, `README.md`, `*-index.md` or a page of links                  | `navigation.hubs`, `navigation.detectHubs` |
+| An entry shows the heading of its page                                                           | `navigation.titleSource`                   |
+| `## Contents` and the like is an in-page contents list                                           | `navigation.contentsHeadings`              |
+| `## How-to`, `## Reference` and the like are groups with known titles                            | `navigation.groupTitles`                   |
+| A library is a directory under the documentation directory named as its Dokka module             | `apiReference.libraries`                   |
+| The API of a library goes under its `Reference` group or entry                                   | `apiReference.referenceHeadings`           |
+| The page of a library is a table of contents directly in its directory, shown with a large title | `navigation.hubs`                          |
+| Any `.html` of the documentation is an interactive page                                          | none                                       |
+| A `.puml` next to a `.svg` of the same name is the source of that diagram                        | none                                       |
+| The quote right after the title is the abstract                                                  | none                                       |
+| A first paragraph that is a single link is the back link                                         | none                                       |
+| A quote that starts with `⚠️` or a bold Warning, Important, Внимание or Важно is a warning       | none                                       |
+| A quote that starts with Note or Примечание is a note                                            | none                                       |
+| Heading ids follow GitLab                                                                        | `anchorStyle`                              |
+
+The directory names of the Diátaxis layout (`how-to/`, `reference/`, `explanation/`, `diagrams/`, `interactive/`)
+mean nothing to the plugin: the headings of the tables of contents make the groups, and every diagram and
+interactive page is found by its file type wherever it lies.
 
 ## checks
 

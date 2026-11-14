@@ -511,14 +511,12 @@ mark {
 }
 
 /* The link back to the table of contents before the title of a page. */
-.content-article > p:first-child,
-.content-landing > p:first-child {
+.content .back-link {
     margin-bottom: 28px;
     font-size: 14px;
 }
 
-.content-article > p:first-child a,
-.content-landing > p:first-child a {
+.content .back-link a {
     color: var(--fg-2);
 }
 

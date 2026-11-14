@@ -60,7 +60,8 @@ internal class SiteSources(
     val sourceBrowseUrl: String?,
     val language: String = "en",
     val anchorStyle: AnchorStyle = AnchorStyle.GITLAB,
-    val groupTitles: Map<String, String> = emptyMap(),
+    val navigation: NavigationOptions = NavigationOptions(),
+    val contentsHeadings: Set<String> = MarkdownPage.DEFAULT_CONTENTS_HEADINGS,
 )
 
 /**
@@ -90,7 +91,8 @@ internal class SiteBuilder(
         }
         val diagrams = SiteDiagrams(sources.staticFiles, sources.preprocessedDiagrams, render, text)
 
-        val pages = sources.pages.mapValues { (path, file) -> MarkdownPage(path, file.readText(), sources.anchorStyle) }
+        val pages = sources.pages.mapValues { (path, file) -> MarkdownPage(path, file.readText(), sources.anchorStyle, sources.contentsHeadings)
+        }
         val siteFiles = sources.staticFiles.keys + sources.renderedDiagrams.keys
         val apiReference = sources.apiReference?.takeIf { it.isDirectory }
         val apiModules = if (apiReference != null) sources.apiModules else emptyList()
@@ -98,7 +100,7 @@ internal class SiteBuilder(
         val interactive = sources.staticFiles
             .filterKeys { it.endsWith(".html", ignoreCase = true) && !InteractivePages.isFrame(it) }
             .map { (path, file) -> InteractivePages.read(path, file) }
-        val navigation = SiteNavigation(pages, siteFiles, text, sources.groupTitles).build(
+        val navigation = SiteNavigation(pages, siteFiles, text, sources.navigation).build(
             readme = sources.readme.takeIf { it in pages },
             index = sources.index.takeIf { it in pages },
             apiModules = apiModules,
@@ -124,7 +126,7 @@ internal class SiteBuilder(
         }
 
         interactive.forEach { page ->
-            val library = libraryIndex(page.path)?.takeIf { it in pages }
+            val library = libraryPage(page.path, pages.keys)
             val back = library?.let {
                 val href = SiteTemplate.rootPrefix(page.path) + SiteNavigation.htmlPath(it)
                 href to pages.getValue(it).title
@@ -145,7 +147,7 @@ internal class SiteBuilder(
             )
             val decorated = SiteTemplate.decorateArticle(diagrams.decorate(page.path, html))
             val content = CodeHighlighter.highlightBlocks(decorated)
-            val style = if (isLibraryIndex(page.path)) PageStyle.LANDING else PageStyle.ARTICLE
+            val style = if (isLibraryIndex(page.path, pages.keys)) PageStyle.LANDING else PageStyle.ARTICLE
             outputDir.resolve(htmlPath).apply {
                 parentFile.mkdirs()
             }.writeText(template.page(htmlPath, page.title, content, style))
@@ -158,27 +160,32 @@ internal class SiteBuilder(
         writeStamp()
     }
 
-    /** The index page of the library that [path] belongs to, `<documentation>/<library>/index.md`, if any. */
-    private fun libraryIndex(path: String): String? {
+    /** Directory of the library that [path] belongs to: the first directory under the documentation directory. */
+    private fun libraryDirectory(path: String): String? {
         val documentation = sources.index.substringBeforeLast('/', "")
         val prefix = if (documentation.isEmpty()) "" else "$documentation/"
         if (!path.startsWith(prefix)) return null
         val library = path.removePrefix(prefix).substringBefore('/', "").ifEmpty { return null }
-        return "$prefix$library/${SiteNavigation.INDEX}"
+        return "$prefix$library"
     }
 
-    /** Name of the library that [path] belongs to: the directory under the documentation directory. */
-    private fun libraryName(path: String): String? = libraryIndex(path)?.removeSuffix("/${SiteNavigation.INDEX}")
-        ?.substringAfterLast('/')
-
-    /** Whether [path] is the index page of a library, `<documentation>/<library>/index.md`: the landing style. */
-    private fun isLibraryIndex(path: String): Boolean {
-        val documentation = sources.index.substringBeforeLast('/', "")
-        val prefix = if (documentation.isEmpty()) "" else "$documentation/"
-        if (!path.startsWith(prefix) || path == sources.index) return false
-        val rest = path.removePrefix(prefix)
-        return rest.count { it == '/' } == 1 && rest.endsWith("/${SiteNavigation.INDEX}")
+    /**
+     * The page of the library that [path] belongs to: a page directly in the library directory whose name makes it a
+     * table of contents, such as `index.md` or `<name>-index.md`.
+     */
+    private fun libraryPage(path: String, pages: Set<String>): String? {
+        val directory = libraryDirectory(path) ?: return null
+        return pages.filter { it.substringBeforeLast('/') == directory && sources.navigation.isHubName(it) }
+            .minByOrNull { if (it.endsWith("/${SiteNavigation.INDEX}")) "" else it }
     }
+
+    /** The Dokka module of the library that [path] belongs to, see [NavigationOptions.libraries]. */
+    private fun libraryName(path: String): String? =
+        libraryDirectory(path)?.substringAfterLast('/')?.let(sources.navigation::moduleOf)
+
+    /** Whether [path] is the page of a library, see [libraryPage]: the landing style. */
+    private fun isLibraryIndex(path: String, pages: Set<String>): Boolean =
+        path != sources.index && libraryPage(path, pages) == path
 
     /** Hash of every file of the site: it changes with the content and not with the time of the build. */
     private fun writeStamp() {

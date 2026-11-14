@@ -24,6 +24,9 @@ import io.github.wolfandrei.docssite.markdown.AnchorStyle
 import org.gradle.api.DefaultTask
 import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.DirectoryProperty
+import io.github.wolfandrei.docssite.site.NavigationOptions
+import io.github.wolfandrei.docssite.site.TitleSource
+import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.MapProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.CacheableTask
@@ -104,7 +107,28 @@ internal abstract class BuildDocumentationSiteTask : DefaultTask() {
 
     /** Titles of the sidebar groups by the lowercased heading, over the defaults of [language]. */
     @get:Input
-    abstract val navigationTitles: MapProperty<String, String>
+    abstract val groupTitles: MapProperty<String, String>
+
+    /** `heading` or `link`, see [TitleSource]. */
+    @get:Input
+    abstract val titleSource: Property<String>
+
+    /** Globs of the tables of contents. */
+    @get:Input
+    abstract val hubPatterns: ListProperty<String>
+
+    @get:Input
+    abstract val detectHubs: Property<Boolean>
+
+    @get:Input
+    abstract val contentsHeadings: ListProperty<String>
+
+    /** Library directories by Dokka module name. */
+    @get:Input
+    abstract val libraries: MapProperty<String, String>
+
+    @get:Input
+    abstract val referenceHeadings: ListProperty<String>
 
     /** `gitlab` or `github`, see [AnchorStyle]. */
     @get:Input
@@ -144,7 +168,15 @@ internal abstract class BuildDocumentationSiteTask : DefaultTask() {
             index = indexPath.get(),
             sourceBrowseUrl = sourceBrowseUrl.orNull,
             language = language.get(),
-            groupTitles = navigationTitles.get(),
+            navigation = NavigationOptions(
+                groupTitles = groupTitles.get(),
+                titleSource = TitleSource.valueOf(titleSource.get().uppercase()),
+                hubPatterns = hubPatterns.get(),
+                detectHubs = detectHubs.get(),
+                referenceHeadings = referenceHeadings.get(),
+                libraries = libraries.get(),
+            ),
+            contentsHeadings = contentsHeadings.get().toSet(),
             anchorStyle = AnchorStyle.valueOf(anchorStyle.get().uppercase()),
         )
         val output = outputDirectory.get().asFile
