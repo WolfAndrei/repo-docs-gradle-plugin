@@ -94,7 +94,7 @@ internal class DocumentationSitePluginTest {
 
     @Test
     fun `check reports broken links, anchors, style, diagram errors and stale diagrams`() {
-        fixture.write()
+        fixture.write(siteSettings = "apiReference { enabled.set(false) }\n    checks { forbiddenCharacters.add(\"—\") }")
         fixture.commitRenderedDiagrams()
         fixture.file(
             "documentation/lib/diagrams/defines.iuml"

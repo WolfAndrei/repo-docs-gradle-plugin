@@ -23,6 +23,7 @@ import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.model.ObjectFactory
 import org.gradle.api.provider.ListProperty
+import org.gradle.api.provider.MapProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.provider.SetProperty
 
@@ -55,6 +56,22 @@ abstract class DocumentationSiteExtension @Inject constructor(objects: ObjectFac
      * `documentationServe` opens them, from the repository.
      */
     abstract val sourceBrowseUrl: Property<String>
+
+    /** Language of the site interface: `en` (default) or `ru`. The pages themselves are not translated. */
+    abstract val language: Property<String>
+
+    /**
+     * Titles of the sidebar groups by the heading of the table of contents, case-insensitive: `how-to`, `reference`,
+     * `explanation`, `tutorials`, `adr`, `diagrams`, `interactive`. The [language] gives the defaults, such as
+     * `Reference`; an entry here replaces one of them or names another heading.
+     */
+    abstract val navigationTitles: MapProperty<String, String>
+
+    /**
+     * Rules of the heading ids: `gitlab` (default) or `github`. They differ only for a heading with a run of
+     * hyphens or spaces, such as `A - B`, and for a heading of digits only.
+     */
+    abstract val anchorStyle: Property<String>
 
     val plantUml: PlantUml = objects.newInstance(PlantUml::class.java)
 
@@ -122,7 +139,7 @@ abstract class DocumentationSiteExtension @Inject constructor(objects: ObjectFac
         /** Whether the rows of tables are checked for [maxLineLength]; by default `false`. */
         val lineLengthInTables: Property<Boolean>
 
-        /** Characters a Markdown page must not contain outside code; by default the long dash `—`. */
+        /** Characters a Markdown page must not contain outside code, such as the long dash `—`; by default none. */
         val forbiddenCharacters: ListProperty<String>
 
         /** Whether a committed SVG next to its `.puml` must match the source; by default `true`. */

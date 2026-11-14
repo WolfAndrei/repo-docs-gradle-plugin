@@ -44,7 +44,21 @@ internal data class NavigationItem(
 internal class SiteNavigation(
     private val pages: Map<String, MarkdownPage>,
     private val siteFiles: Set<String>,
+    private val text: UiText = UiText.of("en"),
+    customGroupTitles: Map<String, String> = emptyMap(),
 ) {
+    /** Titles of the sidebar groups by the lowercased heading: the defaults of the language with the custom ones. */
+    private val groupTitles: Map<String, String> =
+        text.groupTitles() + customGroupTitles.mapKeys { it.key.trim().lowercase() }
+
+    private val referenceTitle: String = groupTitles["reference"] ?: "Reference"
+
+    /**
+     * Title of the sidebar group of the heading [heading] of a table of contents: a heading such as `How-to` or
+     * `Reference` (any case) gets its title from the group titles, any other heading stays as written.
+     */
+    fun groupTitle(heading: String): String = groupTitles[heading.trim().lowercase()] ?: heading
+
     fun build(
         readme: String?,
         index: String?,
@@ -72,7 +86,7 @@ internal class SiteNavigation(
         }
         if (orphans.isNotEmpty()) {
             val root = apiPages.firstOrNull { it.type == ApiPageType.ROOT }?.path
-            items += NavigationItem(API_TITLE, root, orphans)
+            items += NavigationItem(text["api"], root, orphans)
         }
 
         val listed = items.flatMap { it.paths().toList() }.toSet()
@@ -81,7 +95,7 @@ internal class SiteNavigation(
             .sortedBy { it.path }
             .map { NavigationItem(it.path, htmlPath(it.path), emptyList()) }
         if (others.isNotEmpty()) {
-            items += NavigationItem(OTHER_PAGES, null, others)
+            items += NavigationItem(text["otherPages"], null, others)
         }
 
         return items
@@ -118,7 +132,10 @@ internal class SiteNavigation(
     }
 
     private fun isReference(title: String): Boolean =
-        REFERENCE_TITLES.any { title.trim().startsWith(it, ignoreCase = true) }
+        title.trim().let { trimmed ->
+            trimmed.equals(referenceTitle, ignoreCase = true) ||
+                REFERENCE_TITLES.any { trimmed.startsWith(it, ignoreCase = true) }
+        }
 
     /** `API -> packages -> types` of [module]; nested types go under their outer type. */
     private fun apiTree(module: ApiModuleEntry, apiPages: List<ApiPage>): NavigationItem {
@@ -135,7 +152,7 @@ internal class SiteNavigation(
         val packages = own.filter { it.type == ApiPageType.PACKAGE }.sortedBy { it.title }.map { pkg ->
             NavigationItem(pkg.title, pkg.path, children(pkg.path.removeSuffix("/index.html")), SymbolKind.PACKAGE)
         }
-        return NavigationItem(API_TITLE, "$API_DIR/${module.directory}/index.html", packages)
+        return NavigationItem(text["api"], "$API_DIR/${module.directory}/index.html", packages)
     }
 
     private fun fromIndex(page: MarkdownPage, visited: MutableSet<String>): List<NavigationItem> {
@@ -154,7 +171,7 @@ internal class SiteNavigation(
                 is OutlineEntry.Group -> {
                     closeGroup()
                     group = mutableListOf()
-                    groupTitle = entry.title
+                    groupTitle = groupTitle(entry.title)
                 }
 
                 is OutlineEntry.Entry -> entry(page, entry, visited)?.let { (group ?: items) += it }
@@ -184,8 +201,6 @@ internal class SiteNavigation(
     companion object {
         const val API_DIR = "api"
         const val INDEX = "index.md"
-        const val OTHER_PAGES = "Другие страницы"
-        const val API_TITLE = "API"
         private val REFERENCE_TITLES = listOf("Reference", "Справочник")
 
         /** Path of the HTML page of the Markdown file [path]. */

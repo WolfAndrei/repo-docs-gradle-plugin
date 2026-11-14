@@ -26,7 +26,10 @@ import org.gradle.testkit.runner.GradleRunner
  */
 internal class DocumentationFixture(val projectDir: File) {
 
-    fun write(module: Boolean = false, siteSettings: String = "apiReference { enabled.set(false) }") {
+    fun write(
+        module: Boolean = false,
+        siteSettings: String = "apiReference { enabled.set(false) }\n    language.set(\"ru\")",
+    ) {
         val include = if (module) "include(\":lib\", \":plain\")" else ""
         file("settings.gradle.kts").writeText(
             """

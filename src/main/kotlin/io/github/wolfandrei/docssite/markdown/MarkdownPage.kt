@@ -66,7 +66,11 @@ internal data class PageSection(val heading: PageHeading?, val text: String)
  * A Markdown page parsed with the GitLab extensions that the repositories use: tables, strikethrough, task lists and
  * autolinks. [path] is relative to the repository root and uses `/`.
  */
-internal class MarkdownPage(val path: String, val source: String) {
+internal class MarkdownPage(
+    val path: String,
+    val source: String,
+    anchorStyle: AnchorStyle = AnchorStyle.GITLAB,
+) {
     private val document: Node = PARSER.parse(source)
     private val headingOf = IdentityHashMap<Heading, PageHeading>()
 
@@ -83,7 +87,7 @@ internal class MarkdownPage(val path: String, val source: String) {
     val tableLines: Set<Int>
 
     init {
-        val anchors = GitLabAnchors()
+        val anchors = HeadingAnchors(anchorStyle)
         val headings = mutableListOf<PageHeading>()
         val links = mutableListOf<PageLink>()
         val codeLines = mutableSetOf<Int>()

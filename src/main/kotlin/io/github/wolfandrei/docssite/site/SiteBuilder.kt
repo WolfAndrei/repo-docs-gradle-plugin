@@ -16,9 +16,13 @@
 
 package io.github.wolfandrei.docssite.site
 
+import io.github.wolfandrei.docssite.markdown.AnchorStyle
 import io.github.wolfandrei.docssite.markdown.MarkdownPage
 import io.github.wolfandrei.docssite.markdown.RelativeLink
 import java.io.File
+import kotlinx.serialization.builtins.MapSerializer
+import kotlinx.serialization.builtins.serializer
+import kotlinx.serialization.json.Json
 import java.security.MessageDigest
 
 /**
@@ -54,6 +58,9 @@ internal class SiteSources(
     val readme: String,
     val index: String,
     val sourceBrowseUrl: String?,
+    val language: String = "en",
+    val anchorStyle: AnchorStyle = AnchorStyle.GITLAB,
+    val groupTitles: Map<String, String> = emptyMap(),
 )
 
 /**
@@ -66,6 +73,8 @@ internal class SiteBuilder(
     private val warn: (String) -> Unit = {},
 ) {
 
+    private val text = UiText.of(sources.language)
+
     fun build() {
         outputDir.deleteRecursively()
         outputDir.mkdirs()
@@ -76,20 +85,20 @@ internal class SiteBuilder(
         if (!bundle && sources.diagramRender != DiagramRender.BUILD) {
             warn("The browser build of PlantUML is not available, the diagrams are drawn at build time")
         }
-        val diagrams = SiteDiagrams(sources.staticFiles, sources.preprocessedDiagrams, render)
+        val diagrams = SiteDiagrams(sources.staticFiles, sources.preprocessedDiagrams, render, text)
 
-        val pages = sources.pages.mapValues { (path, file) -> MarkdownPage(path, file.readText()) }
+        val pages = sources.pages.mapValues { (path, file) -> MarkdownPage(path, file.readText(), sources.anchorStyle) }
         val siteFiles = sources.staticFiles.keys + sources.renderedDiagrams.keys
         val apiReference = sources.apiReference?.takeIf { it.isDirectory }
         val apiModules = if (apiReference != null) sources.apiModules else emptyList()
-        val apiPages = apiReference?.let { DokkaReference(it, apiModules).pages }.orEmpty()
-        val navigation = SiteNavigation(pages, siteFiles).build(
+        val apiPages = apiReference?.let { DokkaReference(it, apiModules, text).pages }.orEmpty()
+        val navigation = SiteNavigation(pages, siteFiles, text, sources.groupTitles).build(
             readme = sources.readme.takeIf { it in pages },
             index = sources.index.takeIf { it in pages },
             apiModules = apiModules,
             apiPages = apiPages,
         )
-        val template = SiteTemplate(sources.title, navigation)
+        val template = SiteTemplate(sources.title, navigation, text)
 
         sources.staticFiles
             .filterKeys { !diagrams.isDiagramImage(it) }
@@ -112,7 +121,7 @@ internal class SiteBuilder(
 
         if (!diagrams.usesBrowser) bundleDir.deleteRecursively()
         writeHome(pages)
-        writeAssets(SearchIndex.entries(pages.values) + SearchIndex.apiEntries(apiPages))
+        writeAssets(SearchIndex.entries(pages.values) + SearchIndex.apiEntries(apiPages, text))
         writeStamp()
     }
 
@@ -194,9 +203,9 @@ internal class SiteBuilder(
 
         val location = (sources.index.takeIf { it in pages } ?: pages.keys.minOrNull())?.let(SiteNavigation::htmlPath)
         val body = location?.let { "<meta http-equiv=\"refresh\" content=\"0; url=${SiteTemplate.escape(it)}\">" }
-            ?: "<p>Нет страниц</p>"
+            ?: "<p>${SiteTemplate.escape(text["noPages"])}</p>"
         home.writeText(
-            "<!DOCTYPE html>\n<html lang=\"ru\"><head><meta charset=\"utf-8\">$body</head><body></body></html>\n"
+            "<!DOCTYPE html>\n<html lang=\"${text.language}\"><head><meta charset=\"utf-8\">$body</head><body></body></html>\n"
         )
     }
 
@@ -208,9 +217,14 @@ internal class SiteBuilder(
         }
         assets.resolve("search-index.json").writeText(SearchIndex.toJson(entries))
         assets.resolve("search-index.js").writeText(SearchIndex.toScript(entries))
+        assets.resolve(UI_TEXT_SCRIPT).writeText(
+            "window.DOCS_TEXT = ${json.encodeToString(MapSerializer(String.serializer(), String.serializer()), text.scriptStrings())};\n"
+        )
     }
 
     companion object {
+        const val UI_TEXT_SCRIPT = "ui-text.js"
+        private val json = Json
         const val BUILD_STAMP = "${SiteTemplate.ASSETS_DIR}/build-stamp"
         private const val RESOURCES = "/io/github/wolfandrei/docssite/"
     }

@@ -19,6 +19,7 @@ package io.github.wolfandrei.docssite.tasks
 import io.github.wolfandrei.docssite.check.DocumentationChecker
 import io.github.wolfandrei.docssite.check.DocumentationSources
 import io.github.wolfandrei.docssite.plantuml.PlantUmlReport
+import io.github.wolfandrei.docssite.markdown.AnchorStyle
 import org.gradle.api.DefaultTask
 import org.gradle.api.GradleException
 import org.gradle.api.file.ConfigurableFileCollection
@@ -86,6 +87,10 @@ internal abstract class CheckDocumentationTask : DefaultTask() {
     @get:Input
     abstract val checkCommittedDiagrams: Property<Boolean>
 
+    /** `gitlab` or `github`, see [io.github.wolfandrei.docssite.markdown.AnchorStyle]. */
+    @get:Input
+    abstract val anchorStyle: Property<String>
+
     @get:OutputFile
     abstract val reportFile: RegularFileProperty
 
@@ -111,6 +116,7 @@ internal abstract class CheckDocumentationTask : DefaultTask() {
             lineLengthInTables = lineLengthInTables.get(),
             forbiddenCharacters = forbiddenCharacters.get(),
             checkCommittedDiagrams = checkCommittedDiagrams.get(),
+            anchorStyle = AnchorStyle.valueOf(anchorStyle.get().uppercase()),
         )
         val problems = DocumentationChecker(sources).check()
         val (warnings, errors) = problems.partition { it.warning }

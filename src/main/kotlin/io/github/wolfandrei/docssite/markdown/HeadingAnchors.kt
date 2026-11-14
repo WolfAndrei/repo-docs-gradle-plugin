@@ -16,24 +16,29 @@
 
 package io.github.wolfandrei.docssite.markdown
 
+/** Rules of the heading ids: those of GitLab or of GitHub. */
+enum class AnchorStyle { GITLAB, GITHUB }
+
 /**
- * Heading ids by the rules of GitLab, so that the `#якорь` links written for GitLab keep working on the site:
+ * Heading ids by the rules of GitLab or GitHub, so that the `#anchor` links written for the hosting keep working on
+ * the site. Both styles:
  *
- * 1. the text is lowercased;
- * 2. everything except letters, marks, decimal digits, `_`, `-` and the space is removed (`\p{Word}` of Ruby);
- * 3. each space becomes `-`;
- * 4. runs of `-` become one `-`;
- * 5. an id of digits only gets the `anchor-` prefix;
- * 6. a repeated id gets `-1`, `-2` and so on in the order of the headings.
+ * 1. lowercase the text;
+ * 2. remove everything except letters, marks, decimal digits, `_`, `-` and the space;
+ * 3. turn each space into `-`;
+ * 4. number a repeated id with `-1`, `-2` and so on in the order of the headings.
+ *
+ * GitLab also turns runs of `-` into one `-` and gives an id of digits only the `anchor-` prefix; GitHub does neither:
+ * `A - B` is `a-b` on GitLab and `a---b` on GitHub.
  *
  * One instance numbers the headings of one page.
  */
-internal class GitLabAnchors {
+internal class HeadingAnchors(private val style: AnchorStyle = AnchorStyle.GITLAB) {
     private val counters = mutableMapOf<String, Int>()
 
     /** Id of the next heading of the page with the text [text]. */
     fun next(text: String): String {
-        val id = slug(text)
+        val id = slug(text, style)
         val count = counters.getOrDefault(id, 0)
         counters[id] = count + 1
 
@@ -46,13 +51,14 @@ internal class GitLabAnchors {
         private val DIGITS = Regex("\\d+")
 
         /** Id of a heading with the text [text] before the repeated ids are numbered. */
-        fun slug(text: String): String {
+        fun slug(text: String, style: AnchorStyle = AnchorStyle.GITLAB): String {
             val id = text.lowercase()
                 .replace(REJECTED, "")
                 .replace(' ', '-')
-                .replace(HYPHENS, "-")
+            if (style == AnchorStyle.GITHUB) return id
 
-            return if (DIGITS.matches(id)) "anchor-$id" else id
+            val collapsed = id.replace(HYPHENS, "-")
+            return if (DIGITS.matches(collapsed)) "anchor-$collapsed" else collapsed
         }
     }
 }

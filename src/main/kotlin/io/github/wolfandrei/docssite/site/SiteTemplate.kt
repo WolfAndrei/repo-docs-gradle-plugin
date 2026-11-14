@@ -23,7 +23,11 @@ internal enum class PageStyle(val css: String) { ARTICLE("article"), LANDING("la
  * HTML of the site pages. Every address is relative, so the site opens both from the server and from the file
  * system; the styles, the scripts and the search index lie in [ASSETS_DIR].
  */
-internal class SiteTemplate(private val siteTitle: String, private val navigation: List<NavigationItem>) {
+internal class SiteTemplate(
+    private val siteTitle: String,
+    private val navigation: List<NavigationItem>,
+    private val text: UiText = UiText.of("en"),
+) {
 
     /** The page at [path] (relative to the site root) with the title [title] and the body [content]. */
     fun page(path: String, title: String, content: String, style: PageStyle = PageStyle.ARTICLE): String {
@@ -31,7 +35,7 @@ internal class SiteTemplate(private val siteTitle: String, private val navigatio
 
         return """
             |<!DOCTYPE html>
-            |<html lang="ru">
+            |<html lang="${text.language}">
             |<head>
             |<meta charset="utf-8">
             |<meta name="viewport" content="width=device-width, initial-scale=1">
@@ -40,15 +44,15 @@ internal class SiteTemplate(private val siteTitle: String, private val navigatio
             |</head>
             |<body data-root="$root" class="page-${style.css}">
             |<header class="site-header">
-            |<button class="nav-toggle" type="button" aria-label="Навигация" aria-expanded="false"><span></span></button>
+            |<button class="nav-toggle" type="button" aria-label="${escape(text["navigation"])}" aria-expanded="false"><span></span></button>
             |<a class="site-title" href="${root}index.html">${escape(siteTitle)}</a>
             |<div class="search">
-            |<input id="search-input" type="search" placeholder="Поиск" autocomplete="off" aria-label="Поиск">
+            |<input id="search-input" type="search" placeholder="${escape(text["search"])}" autocomplete="off" aria-label="${escape(text["search"])}">
             |<div id="search-results" class="search-results" hidden></div>
             |</div>
             |</header>
             |<div class="layout">
-            |<nav class="sidebar" aria-label="Навигация">
+            |<nav class="sidebar" aria-label="${escape(text["navigation"])}">
             |${navigation(path, root)}
             |</nav>
             |<main class="content content-${style.css}">
@@ -56,6 +60,7 @@ internal class SiteTemplate(private val siteTitle: String, private val navigatio
             |</main>
             |</div>
             |<script src="${root}$ASSETS_DIR/search-index.js"></script>
+            |<script src="${root}$ASSETS_DIR/${SiteBuilder.UI_TEXT_SCRIPT}"></script>
             |<script src="${root}$ASSETS_DIR/site.js"></script>
             |</body>
             |</html>
@@ -71,7 +76,7 @@ internal class SiteTemplate(private val siteTitle: String, private val navigatio
     }
 
     private fun append(html: StringBuilder, item: NavigationItem, current: String, root: String, depth: Int) {
-        val badge = item.kind?.let { DokkaReference.badge(it) }.orEmpty()
+        val badge = item.kind?.let { DokkaReference.badge(it, text.kind(it)) }.orEmpty()
         val label = "$badge<span class=\"nav-label\">${escape(item.title)}</span>"
         val link = item.path?.let { path ->
             val currentClass = if (path == current) " class=\"current\" aria-current=\"page\"" else ""

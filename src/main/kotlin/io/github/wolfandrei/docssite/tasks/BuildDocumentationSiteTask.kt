@@ -20,9 +20,11 @@ import io.github.wolfandrei.docssite.site.ApiModuleEntry
 import io.github.wolfandrei.docssite.site.DiagramRender
 import io.github.wolfandrei.docssite.site.SiteBuilder
 import io.github.wolfandrei.docssite.site.SiteSources
+import io.github.wolfandrei.docssite.markdown.AnchorStyle
 import org.gradle.api.DefaultTask
 import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.DirectoryProperty
+import org.gradle.api.provider.MapProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.CacheableTask
 import org.gradle.api.tasks.IgnoreEmptyDirectories
@@ -96,6 +98,18 @@ internal abstract class BuildDocumentationSiteTask : DefaultTask() {
     @get:Input
     abstract val sourceBrowseUrl: Property<String>
 
+    /** Language of the interface, `en` or `ru`. */
+    @get:Input
+    abstract val language: Property<String>
+
+    /** Titles of the sidebar groups by the lowercased heading, over the defaults of [language]. */
+    @get:Input
+    abstract val navigationTitles: MapProperty<String, String>
+
+    /** `gitlab` or `github`, see [AnchorStyle]. */
+    @get:Input
+    abstract val anchorStyle: Property<String>
+
     @get:OutputDirectory
     abstract val outputDirectory: DirectoryProperty
 
@@ -129,6 +143,9 @@ internal abstract class BuildDocumentationSiteTask : DefaultTask() {
             readme = readmePath.get(),
             index = indexPath.get(),
             sourceBrowseUrl = sourceBrowseUrl.orNull,
+            language = language.get(),
+            groupTitles = navigationTitles.get(),
+            anchorStyle = AnchorStyle.valueOf(anchorStyle.get().uppercase()),
         )
         val output = outputDirectory.get().asFile
         SiteBuilder(sources, output) { logger.warn(it) }.build()

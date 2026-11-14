@@ -41,6 +41,7 @@ internal class SiteDiagrams(
     private val staticFiles: Map<String, File>,
     private val preprocessed: Map<String, File>,
     private val render: DiagramRender,
+    private val text: UiText = UiText.of("en"),
 ) {
     private var counter = 0
 
@@ -83,11 +84,11 @@ internal class SiteDiagrams(
 
         val name = source.substringAfterLast('/')
         html.append(
-            "<details class=\"diagram-source\"><summary>Исходник: <code>${SiteTemplate.escape(name)}</code></summary>"
+            "<details class=\"diagram-source\"><summary>${SiteTemplate.escape(text["diagramSource"])}: <code>${SiteTemplate.escape(name)}</code></summary>"
         )
         val includes = includes(source)
         if (includes.isNotEmpty()) {
-            html.append("<p>Подключает:</p><ul>")
+            html.append("<p>${SiteTemplate.escape(text["diagramIncludes"])}</p><ul>")
             includes.forEach { html.append("<li><code>${SiteTemplate.escape(it)}</code></li>") }
             html.append("</ul>")
         }

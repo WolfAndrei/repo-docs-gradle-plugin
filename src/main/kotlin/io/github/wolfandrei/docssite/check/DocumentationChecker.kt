@@ -16,6 +16,7 @@
 
 package io.github.wolfandrei.docssite.check
 
+import io.github.wolfandrei.docssite.markdown.AnchorStyle
 import io.github.wolfandrei.docssite.markdown.MarkdownPage
 import io.github.wolfandrei.docssite.markdown.RelativeLink
 import io.github.wolfandrei.docssite.plantuml.PlantUmlReport
@@ -61,11 +62,12 @@ internal class DocumentationSources(
     val lineLengthInTables: Boolean,
     val forbiddenCharacters: List<String>,
     val checkCommittedDiagrams: Boolean,
+    val anchorStyle: AnchorStyle = AnchorStyle.GITLAB,
 )
 
 /** Checks the links, the style of the Markdown pages and the diagrams. */
 internal class DocumentationChecker(private val sources: DocumentationSources) {
-    private val pages = sources.pages.mapValues { (path, file) -> MarkdownPage(path, file.readText()) }
+    private val pages = sources.pages.mapValues { (path, file) -> MarkdownPage(path, file.readText(), sources.anchorStyle) }
 
     fun check(): List<DocumentationProblem> {
         val problems = mutableListOf<DocumentationProblem>()

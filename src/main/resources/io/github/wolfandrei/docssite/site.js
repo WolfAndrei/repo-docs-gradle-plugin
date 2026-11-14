@@ -19,6 +19,11 @@
     "use strict";
 
     var root = document.body.getAttribute("data-root") || "";
+    var TEXT = window.DOCS_TEXT || {};
+
+    function t(key, fallback) {
+        return TEXT[key] || fallback;
+    }
     var index = (window.DOCS_SEARCH_INDEX || []).map(function (entry) {
         return {
             title: entry.t,
@@ -107,7 +112,7 @@
             return;
         }
         if (found.results.length === 0) {
-            output.innerHTML = "<div class=\"empty\">Ничего не найдено</div>";
+            output.innerHTML = "<div class=\"empty\">" + escapeHtml(t("noResults", "No results")) + "</div>";
         } else {
             output.innerHTML = found.results.map(function (result) {
                 var entry = result.entry;
@@ -178,7 +183,7 @@
             anchor.className = "heading-anchor";
             anchor.href = "#" + heading.id;
             anchor.textContent = "#";
-            anchor.setAttribute("aria-label", "Ссылка на раздел");
+            anchor.setAttribute("aria-label", t("headingLink", "Link to this section"));
             heading.appendChild(anchor);
         });
 
@@ -220,7 +225,8 @@
             ICONS[name] + "</svg>";
     }
 
-    function button(action, label, iconName) {
+    function button(action, text, iconName) {
+        var label = escapeHtml(text);
         return "<button type=\"button\" class=\"diagram-button\" data-action=\"" + action + "\" title=\"" + label +
             "\" aria-label=\"" + label + "\">" + icon(iconName) + "</button>";
     }
@@ -230,13 +236,13 @@
         var figure = document.createElement("figure");
         figure.className = "diagram";
         figure.tabIndex = 0;
-        figure.setAttribute("aria-label", "Схема: + и - масштаб, 0 вписать, F на весь экран");
+        figure.setAttribute("aria-label", t("diagram", "Diagram"));
         figure.innerHTML = "<div class=\"diagram-toolbar\">" +
-            button("out", "Уменьшить", "out") +
+            button("out", t("zoomOut", "Zoom out"), "out") +
             "<span class=\"diagram-scale\" aria-live=\"polite\">100%</span>" +
-            button("in", "Увеличить", "in") +
-            button("fit", "Вписать", "fit") +
-            button("full", "На весь экран", "full") +
+            button("in", t("zoomIn", "Zoom in"), "in") +
+            button("fit", t("fit", "Fit"), "fit") +
+            button("full", t("fullScreen", "Full screen"), "full") +
             "</div><div class=\"diagram-viewport\"><div class=\"diagram-stage\"></div></div>";
         var viewport = figure.querySelector(".diagram-viewport");
         var stage = figure.querySelector(".diagram-stage");
@@ -332,8 +338,8 @@
             figure.classList.toggle("diagram-full", full);
             document.documentElement.classList.toggle("diagram-open", full);
             fullButton.innerHTML = icon(full ? "close" : "full");
-            fullButton.setAttribute("aria-label", full ? "Закрыть" : "На весь экран");
-            fullButton.title = full ? "Закрыть (Esc)" : "На весь экран";
+            fullButton.setAttribute("aria-label", full ? t("close", "Close") : t("fullScreen", "Full screen"));
+            fullButton.title = full ? t("closeHint", "Close (Esc)") : t("fullScreen", "Full screen");
             viewport.style.height = "";
             fit();
             figure.focus({preventScroll: true});

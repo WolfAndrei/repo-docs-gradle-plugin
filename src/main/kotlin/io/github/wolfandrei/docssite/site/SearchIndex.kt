@@ -49,11 +49,11 @@ internal object SearchIndex {
     }
 
     /** An entry per declaration of the API reference: its qualified name, its kind and its documentation. */
-    fun apiEntries(pages: Collection<ApiPage>): List<SearchEntry> = pages
+    fun apiEntries(pages: Collection<ApiPage>, text: UiText): List<SearchEntry> = pages
         .filter { it.type == ApiPageType.CLASSLIKE || it.type == ApiPageType.MEMBER }
         .sortedBy { it.path }
         .map { page ->
-            val kind = page.kind?.label?.let { "$it, ${page.module}" } ?: page.module.orEmpty()
+            val kind = page.kind?.let(text::kind)?.let { "$it, ${page.module}" } ?: page.module.orEmpty()
             SearchEntry("${page.qualifiedTitle} ($kind)", page.path, page.text.replace(WHITESPACE, " ").take(MAX_TEXT))
         }
 

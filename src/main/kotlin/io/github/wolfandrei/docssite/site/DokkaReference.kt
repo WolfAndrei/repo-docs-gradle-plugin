@@ -21,21 +21,21 @@ import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 
-/** Kind of a Kotlin declaration with the letter of its badge and its label on the site. */
-internal enum class SymbolKind(val badge: String, val label: String, val css: String) {
-    CLASS("C", "Класс", "class"),
-    DATA_CLASS("C", "Класс данных", "class"),
-    OBJECT("O", "Объект", "object"),
-    INTERFACE("I", "Интерфейс", "interface"),
-    ENUM("E", "Перечисление", "enum"),
-    ENUM_ENTRY("E", "Элемент перечисления", "enum"),
-    ANNOTATION("A", "Аннотация", "class"),
-    TYPEALIAS("T", "Псевдоним типа", "typealias"),
-    FUNCTION("F", "Функция", "function"),
-    CONSTRUCTOR("F", "Конструктор", "function"),
-    PROPERTY("P", "Свойство", "property"),
-    PACKAGE("{}", "Пакет", "package"),
-    MODULE("M", "Модуль", "module"),
+/** Kind of a Kotlin declaration with the letter and the style of its badge; [UiText.kind] gives its label. */
+internal enum class SymbolKind(val badge: String, val css: String) {
+    CLASS("C", "class"),
+    DATA_CLASS("C", "class"),
+    OBJECT("O", "object"),
+    INTERFACE("I", "interface"),
+    ENUM("E", "enum"),
+    ENUM_ENTRY("E", "enum"),
+    ANNOTATION("A", "class"),
+    TYPEALIAS("T", "typealias"),
+    FUNCTION("F", "function"),
+    CONSTRUCTOR("F", "function"),
+    PROPERTY("P", "property"),
+    PACKAGE("{}", "package"),
+    MODULE("M", "module"),
     ;
 
     val isType: Boolean get() = this in TYPES
@@ -94,7 +94,11 @@ internal class ApiPage(
  * the abstract and the platforms, the declaration for each source set, the overview, the KDoc sections and the members
  * grouped by kind.
  */
-internal class DokkaReference(private val directory: File, private val modules: List<ApiModuleEntry>) {
+internal class DokkaReference(
+    private val directory: File,
+    private val modules: List<ApiModuleEntry>,
+    private val text: UiText,
+) {
 
     val pages: List<ApiPage> by lazy { read() }
 
@@ -148,7 +152,7 @@ internal class DokkaReference(private val directory: File, private val modules: 
         html.append("<article class=\"symbol-page\">")
         breadcrumbs(main)?.let(html::append)
         html.append("<header class=\"symbol-header\">")
-        kind?.let { html.append("<p class=\"symbol-kind\">").append(escape(it.label)).append("</p>") }
+        kind?.let { html.append("<p class=\"symbol-kind\">").append(escape(text.kind(it))).append("</p>") }
         html.append("<h1>").append(escape(title.ifEmpty { "API" })).append("</h1>")
         val (abstract, rest) = summary?.let { splitFirstSentence(it.html()) } ?: (null to null)
         abstract?.let { html.append("<div class=\"symbol-abstract\"><p>").append(it).append("</p></div>") }
@@ -156,7 +160,7 @@ internal class DokkaReference(private val directory: File, private val modules: 
         html.append("</header>")
 
         if (declarations.isNotEmpty()) {
-            html.append("<section class=\"symbol-section\"><h2 id=\"declaration\">Объявление</h2>")
+            html.append("<section class=\"symbol-section\"><h2 id=\"declaration\">${escape(text["declaration"])}</h2>")
             declarations.forEach { content ->
                 html.append("<div class=\"declaration\">")
                 if (declarations.size > 1 || platforms.size > 1) {
@@ -172,7 +176,7 @@ internal class DokkaReference(private val directory: File, private val modules: 
 
         val overview = description.filter { it !== summary && !it.hasClass("kdoc-tag") }
         if (overview.isNotEmpty() || rest != null) {
-            html.append("<section class=\"symbol-section\"><h2 id=\"overview\">Обзор</h2>")
+            html.append("<section class=\"symbol-section\"><h2 id=\"overview\">${escape(text["overview"])}</h2>")
             rest?.let { html.append("<p class=\"paragraph\">").append(it).append("</p>") }
             overview.forEach { html.append(element(it)) }
             html.append("</section>")
@@ -180,7 +184,7 @@ internal class DokkaReference(private val directory: File, private val modules: 
         description.filter { it.hasClass("kdoc-tag") }.forEach { tag ->
             val heading = tag.selectFirst("h4")?.text().orEmpty()
             tag.selectFirst("h4")?.remove()
-            val label = TAGS[heading] ?: heading
+            val label = text.tag(heading)
             html.append("<section class=\"symbol-section\"><h2>").append(escape(label)).append("</h2>")
             tag.children().forEach { html.append(element(it)) }
             html.append("</section>")
@@ -188,9 +192,9 @@ internal class DokkaReference(private val directory: File, private val modules: 
 
         val topics = topics(main)
         if (topics.isNotEmpty()) {
-            val heading = if (pageType == ApiPageType.CLASSLIKE || pageType == ApiPageType.MEMBER) "Темы" else null
+            val heading = if (pageType == ApiPageType.CLASSLIKE || pageType == ApiPageType.MEMBER) text["topics"] else null
             html.append("<section class=\"symbol-section topics\">")
-            heading?.let { html.append("<h2 id=\"topics\">").append(it).append("</h2>") }
+            heading?.let { html.append("<h2 id=\"topics\">").append(escape(it)).append("</h2>") }
             topics.forEach { html.append(it) }
             html.append("</section>")
         }
@@ -209,6 +213,12 @@ internal class DokkaReference(private val directory: File, private val modules: 
             text = cleanErrors(text),
         )
     }
+
+    private fun platformList(platforms: List<String>, css: String): String = platforms.joinToString(
+        prefix = "<ul class=\"platforms $css\" aria-label=\"${escape(text["platforms"])}\">",
+        separator = "",
+        postfix = "</ul>",
+    ) { "<li class=\"platform platform-${platformClass(it)}\">${escape(it)}</li>" }
 
     /** Drops the parts of the Dokka interface: copy buttons, platform tabs, scripts. */
     private fun clean(main: Element) {
@@ -261,7 +271,7 @@ internal class DokkaReference(private val directory: File, private val modules: 
         val items = crumbs.children().filter { it.tagName() == "a" || it.hasClass("current") }
         if (items.size < 2) return null
         return items.dropLast(1).joinToString(
-            prefix = "<nav class=\"breadcrumbs\" aria-label=\"Путь\">",
+            prefix = "<nav class=\"breadcrumbs\" aria-label=\"${escape(text["breadcrumbs"])}\">",
             separator = "<span class=\"breadcrumb-separator\">/</span>",
             postfix = "</nav>",
         ) { "<a href=\"${escape(it.attr("href"))}\">${escape(it.text())}</a>" }
@@ -271,7 +281,7 @@ internal class DokkaReference(private val directory: File, private val modules: 
     private fun topics(main: Element): List<String> {
         return main.select("h2").filter { it.parents().none { parent -> parent.hasClass("cover") } }.mapNotNull { h2 ->
             val table = h2.nextElementSibling()?.takeIf { it.hasClass("table") } ?: return@mapNotNull null
-            val label = SECTIONS[h2.text()] ?: h2.text()
+            val label = text.section(h2.text())
             val rows = table.select("> .table-row").joinToString("") { row(it, h2.text()) }
             "<h3>${escape(label)}</h3><div class=\"topic-list\">$rows</div>"
         }
@@ -292,7 +302,7 @@ internal class DokkaReference(private val directory: File, private val modules: 
         val html = StringBuilder("<div class=\"topic\"")
         anchor?.let { html.append(" id=\"").append(escape(it)).append("\"") }
         html.append(">")
-        html.append(badge(kind))
+        html.append(badge(kind, text.kind(kind)))
         html.append("<div class=\"topic-body\">")
 
         val seen = mutableSetOf<String>()
@@ -350,30 +360,7 @@ internal class DokkaReference(private val directory: File, private val modules: 
     companion object {
         private const val NAVIGATION = "navigation.html"
 
-        private val SECTIONS = mapOf(
-            "Packages" to "Пакеты",
-            "Types" to "Типы",
-            "Constructors" to "Конструкторы",
-            "Properties" to "Свойства",
-            "Functions" to "Функции",
-            "Entries" to "Элементы",
-            "Inheritors" to "Наследники",
-            "Members" to "Члены",
-            "Modules" to "Модули",
-        )
 
-        private val TAGS = mapOf(
-            "Return" to "Возвращаемое значение",
-            "Parameters" to "Параметры",
-            "Throws" to "Исключения",
-            "See also" to "См. также",
-            "Since" to "Начиная с версии",
-            "Samples" to "Примеры",
-            "Inheritors" to "Наследники",
-            "Receiver" to "Получатель",
-            "Author" to "Автор",
-            "Deprecated" to "Устарело",
-        )
 
         /** Analysis errors of Dokka in the declarations, such as a supertype of another source set it did not see. */
         private val ANALYSIS_ERROR = Regex("(?:&lt;ERROR CLASS&gt;|<ERROR CLASS>)?\\s*ERROR CLASS: Symbol not found for ")
@@ -403,14 +390,8 @@ internal class DokkaReference(private val directory: File, private val modules: 
         fun platformName(sourceSet: String): String =
             sourceSet.substringAfterLast('/').removeSuffix("Main").ifEmpty { sourceSet }
 
-        fun badge(kind: SymbolKind): String =
-            "<span class=\"kind-badge kind-${kind.css}\" title=\"${escape(kind.label)}\">${escape(kind.badge)}</span>"
-
-        private fun platformList(platforms: List<String>, css: String): String = platforms.joinToString(
-            prefix = "<ul class=\"platforms $css\" aria-label=\"Платформы\">",
-            separator = "",
-            postfix = "</ul>",
-        ) { "<li class=\"platform platform-${platformClass(it)}\">${escape(it)}</li>" }
+        fun badge(kind: SymbolKind, label: String): String =
+            "<span class=\"kind-badge kind-${kind.css}\" title=\"${escape(label)}\">${escape(kind.badge)}</span>"
 
         private fun platformClass(name: String): String = when (name) {
             "common" -> "common"

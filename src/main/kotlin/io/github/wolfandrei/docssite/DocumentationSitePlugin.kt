@@ -92,6 +92,9 @@ internal class DocumentationSitePlugin : Plugin<Project> {
             readmePath.set(extension.readme.map { it.asFile.relativeTo(rootDir).invariantSeparatorsPath })
             indexPath.set(extension.index.map { it.asFile.relativeTo(rootDir).invariantSeparatorsPath })
             sourceBrowseUrl.set(extension.sourceBrowseUrl)
+            language.set(extension.language)
+            navigationTitles.set(extension.navigationTitles)
+            anchorStyle.set(extension.anchorStyle)
             outputDirectory.set(extension.outputDirectory)
         }
 
@@ -112,6 +115,7 @@ internal class DocumentationSitePlugin : Plugin<Project> {
             maxLineLength.set(extension.checks.maxLineLength)
             lineLengthInTables.set(extension.checks.lineLengthInTables)
             forbiddenCharacters.set(extension.checks.forbiddenCharacters)
+            anchorStyle.set(extension.anchorStyle)
             checkCommittedDiagrams.set(extension.checks.committedDiagrams)
             reportFile.set(layout.buildDirectory.file("docs-site-check/report.txt"))
         }
@@ -143,7 +147,10 @@ internal class DocumentationSitePlugin : Plugin<Project> {
         extension.checks.runWithCheck.convention(false)
         extension.checks.maxLineLength.convention(DEFAULT_MAX_LINE_LENGTH)
         extension.checks.lineLengthInTables.convention(false)
-        extension.checks.forbiddenCharacters.convention(listOf(LONG_DASH))
+        extension.checks.forbiddenCharacters.convention(emptyList())
+        extension.language.convention("en")
+        extension.navigationTitles.convention(emptyMap())
+        extension.anchorStyle.convention("gitlab")
         extension.checks.committedDiagrams.convention(true)
         extension.checks.excludedDirectories.convention(RepositoryPathsValueSource.DEFAULT_EXCLUDED_DIRECTORIES)
         extension.serve.port.convention(
@@ -274,7 +281,6 @@ internal class DocumentationSitePlugin : Plugin<Project> {
         const val PORT_PROPERTY = "documentationSite.port"
         const val DEFAULT_PORT = 8000
         const val DEFAULT_MAX_LINE_LENGTH = 120
-        const val LONG_DASH = "—"
         val PLANTUML_INCLUDES = listOf("**/*.puml", "**/*.iuml", "**/*.plantuml", "**/*.pu")
 
         /** Whether the module [path] is documented: listed in [included] or none listed, and not under [excluded]. */
