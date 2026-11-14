@@ -31,10 +31,10 @@ internal class HeadingAnchorsTest {
 
     @Test
     fun `runs of hyphens become one, as GitLab documents`() {
-        assertEquals("this-is-an-en-dash", HeadingAnchors.slug("This – is an en-dash"))
+        assertEquals("this-is-an-en-dash", HeadingAnchors.slug("This – is an en-dash", AnchorStyle.GITLAB))
         assertEquals(
             "oldinputs-deprecated-удалить-в-20",
-            HeadingAnchors.slug("oldInputs (Deprecated - удалить в 2.0)")
+            HeadingAnchors.slug("oldInputs (Deprecated - удалить в 2.0)", AnchorStyle.GITLAB)
         )
     }
 
@@ -47,9 +47,9 @@ internal class HeadingAnchorsTest {
     }
 
     @Test
-    fun `digits only get the anchor prefix`() {
-        assertEquals("anchor-123", HeadingAnchors.slug("123"))
-        assertEquals("1-шаг", HeadingAnchors.slug("1. Шаг"))
+    fun `digits only get the anchor prefix on GitLab`() {
+        assertEquals("anchor-123", HeadingAnchors.slug("123", AnchorStyle.GITLAB))
+        assertEquals("1-шаг", HeadingAnchors.slug("1. Шаг", AnchorStyle.GITLAB))
     }
 
     @Test
@@ -60,6 +60,12 @@ internal class HeadingAnchorsTest {
             listOf("пример", "пример-1", "пример-2", "другое"),
             listOf("Пример", "Пример", "Пример", "Другое").map(anchors::next)
         )
+    }
+
+    @Test
+    fun `GitHub style is the default`() {
+        assertEquals("a---b", HeadingAnchors.slug("A - B"))
+        assertEquals(listOf("a---b", "a---b-1"), HeadingAnchors().let { listOf(it.next("A - B"), it.next("A - B")) })
     }
 
     @Test

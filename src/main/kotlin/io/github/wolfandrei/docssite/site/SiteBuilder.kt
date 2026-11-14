@@ -59,7 +59,7 @@ internal class SiteSources(
     val index: String,
     val sourceBrowseUrl: String?,
     val language: String = "en",
-    val anchorStyle: AnchorStyle = AnchorStyle.GITLAB,
+    val anchorStyle: AnchorStyle = AnchorStyle.GITHUB,
     val navigation: NavigationOptions = NavigationOptions(),
     val contentsHeadings: Set<String> = MarkdownPage.DEFAULT_CONTENTS_HEADINGS,
 )

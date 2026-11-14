@@ -69,7 +69,7 @@ internal data class PageSection(val heading: PageHeading?, val text: String)
 internal class MarkdownPage(
     val path: String,
     val source: String,
-    anchorStyle: AnchorStyle = AnchorStyle.GITLAB,
+    anchorStyle: AnchorStyle = AnchorStyle.GITHUB,
     private val contentsHeadings: Set<String> = DEFAULT_CONTENTS_HEADINGS,
 ) {
     private val document: Node = PARSER.parse(source)

@@ -106,7 +106,9 @@ internal class DocumentationSitePluginTest {
 
     @Test
     fun `check reports broken links, anchors, style, diagram errors and stale diagrams`() {
-        fixture.write(siteSettings = "apiReference { enabled.set(false) }\n    checks { forbiddenCharacters.add(\"—\") }")
+        fixture.write(
+            siteSettings = "apiReference { enabled.set(false) }\n    checks { forbiddenCharacters.add(\"—\"); committedDiagrams.set(true) }"
+        )
         fixture.commitRenderedDiagrams()
         fixture.file(
             "documentation/lib/diagrams/defines.iuml"
@@ -141,6 +143,45 @@ internal class DocumentationSitePluginTest {
             "documentation/lib/diagrams/context.svg: out of date with its PlantUML source",
         ).forEach { expected -> assertTrue(expected in output) { "No `$expected` in:\n$output" } }
         assertFalse("```" in output.substringAfter("problem(s)").substringBefore("Report:")) { output }
+    }
+
+    @Test
+    fun `line length comes from editorconfig, the committed SVG and GitLab anchors are not checked by default`() {
+        fixture.write(siteSettings = "apiReference { enabled.set(false) }")
+        fixture.file("documentation/lib/how-to/usage.md").appendText(
+            "\n## Раздел - с дефисом\n\n[GitHub](#раздел---с-дефисом)\n${"Длинная строка ".repeat(6)}\n"
+        )
+        fixture.file("documentation/lib/diagrams/context.svg").writeText("<svg><text>старая схема</text></svg>\n")
+        fixture.file("documentation/lib/diagrams/put.svg").writeText("<svg/>\n")
+        fixture.file(".editorconfig").writeText("root = true\n\n[*]\nmax_line_length = 100\n\n[*.md]\nmax_line_length = 80\n")
+
+        val withLimit = fixture.run("documentationCheck", expectFailure = true).output
+        assertTrue("line is 90 characters, longer than 80" in withLimit) { withLimit }
+        assertFalse("out of date" in withLimit || "is not a heading" in withLimit) { withLimit }
+
+        fixture.file(".editorconfig")
+            .writeText("root = true\n\n[*.{md,kt}]\nmax_line_length = 80\n[*.md]\nmax_line_length = off\n")
+        assertTrue("no problems" in fixture.run("documentationCheck").output)
+    }
+
+    @Test
+    fun `docs is the documentation directory when there is no documentation directory`() {
+        fixture.write()
+        fixture.commitRenderedDiagrams()
+        fixture.projectDir.resolve("documentation").renameTo(fixture.projectDir.resolve("docs"))
+        fixture.file("README.md").writeText("# Fixture\n\nДокументация - в [оглавлении](docs/index.md).\n")
+
+        val tasks = arrayOf("documentationSite", "documentationCheck", "--configuration-cache")
+        val result = fixture.run(*tasks)
+
+        assertTrue("Documentation check: 4 pages, no problems" in result.output) { result.output }
+        assertTrue(fixture.site("docs/lib/how-to/usage.html").isFile)
+
+        fixture.file("documentation/index.md").writeText("# Новая документация\n")
+        val moved = fixture.run(*tasks)
+        assertTrue("configuration cache cannot be reused" in moved.output) { moved.output }
+        assertTrue("Documentation check: 2 pages" in moved.output) { moved.output }
+        assertTrue(fixture.site("documentation/index.html").isFile)
     }
 
     @Test

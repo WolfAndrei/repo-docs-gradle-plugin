@@ -62,7 +62,7 @@ internal class DocumentationSources(
     val lineLengthInTables: Boolean,
     val forbiddenCharacters: List<String>,
     val checkCommittedDiagrams: Boolean,
-    val anchorStyle: AnchorStyle = AnchorStyle.GITLAB,
+    val anchorStyle: AnchorStyle = AnchorStyle.GITHUB,
 )
 
 /** Checks the links, the style of the Markdown pages and the diagrams. */

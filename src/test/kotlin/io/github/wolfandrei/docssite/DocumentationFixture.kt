@@ -103,6 +103,8 @@ internal class DocumentationFixture(val projectDir: File) {
             )
         }
 
+        // The fixture lies inside this repository: `root = true` keeps its .editorconfig out.
+        file(".editorconfig").writeText("root = true\n\n[*]\nindent_style = space\n\n[*.md]\nmax_line_length = 120\n")
         file("README.md").writeText(
             """
             |# Fixture

@@ -16,6 +16,8 @@
 
 package io.github.wolfandrei.docssite
 
+import io.github.wolfandrei.docssite.check.EditorConfig
+import io.github.wolfandrei.docssite.check.EditorConfigLineLengthValueSource
 import io.github.wolfandrei.docssite.check.RepositoryPathsValueSource
 import io.github.wolfandrei.docssite.lint.RumdlDistribution
 import io.github.wolfandrei.docssite.plantuml.GraphvizValueSource
@@ -125,6 +127,7 @@ internal class DocumentationSitePlugin : Plugin<Project> {
             renderedDiagrams.set(render.flatMap { it.outputDirectory.dir(RenderPlantUmlTask.SVG_DIR) })
             plantUmlReport.set(render.flatMap { it.reportFile })
             maxLineLength.set(extension.checks.maxLineLength)
+            editorConfigFiles.from(extension.index.map { EditorConfig.candidates(it.asFile.parentFile) })
             lineLengthInTables.set(extension.checks.lineLengthInTables)
             forbiddenCharacters.set(extension.checks.forbiddenCharacters)
             anchorStyle.set(extension.anchorStyle)
@@ -158,7 +161,13 @@ internal class DocumentationSitePlugin : Plugin<Project> {
     private fun Project.configureConventions(extension: DocumentationSiteExtension) {
         extension.title.convention(name)
         extension.readme.convention(layout.projectDirectory.file("README.md"))
-        extension.documentationDirectory.convention(layout.projectDirectory.dir("documentation"))
+        extension.documentationDirectory.convention(
+            layout.projectDirectory.dir(
+                providers.of(DocumentationDirectoryValueSource::class.java) {
+                    parameters.root.set(layout.projectDirectory)
+                }
+            )
+        )
         extension.index.convention(extension.documentationDirectory.file("index.md"))
         extension.outputDirectory.convention(layout.buildDirectory.dir("docs-site"))
         extension.plantUml.version.convention(PLANTUML_VERSION)
@@ -166,7 +175,9 @@ internal class DocumentationSitePlugin : Plugin<Project> {
         extension.plantUml.render.convention(RENDER_AUTO)
         extension.apiReference.enabled.convention(true)
         extension.checks.runWithCheck.convention(false)
-        extension.checks.maxLineLength.convention(DEFAULT_MAX_LINE_LENGTH)
+        extension.checks.maxLineLength.convention(
+            providers.of(EditorConfigLineLengthValueSource::class.java) { parameters.file.set(extension.index) }
+        )
         extension.checks.lineLengthInTables.convention(false)
         extension.checks.forbiddenCharacters.convention(emptyList())
         extension.language.convention("en")
@@ -177,8 +188,8 @@ internal class DocumentationSitePlugin : Plugin<Project> {
         extension.navigation.contentsHeadings.convention(MarkdownPage.DEFAULT_CONTENTS_HEADINGS.toList())
         extension.apiReference.libraries.convention(emptyMap())
         extension.apiReference.referenceHeadings.convention(NavigationOptions.DEFAULT_REFERENCE_HEADINGS)
-        extension.anchorStyle.convention("gitlab")
-        extension.checks.committedDiagrams.convention(true)
+        extension.anchorStyle.convention("github")
+        extension.checks.committedDiagrams.convention(false)
         extension.checks.excludedDirectories.convention(RepositoryPathsValueSource.DEFAULT_EXCLUDED_DIRECTORIES)
         extension.checks.markdownLint.apply {
             enabled.convention(true)
@@ -372,7 +383,6 @@ internal class DocumentationSitePlugin : Plugin<Project> {
         const val RUMDL_LINE_LENGTH_RULE = "MD013"
         const val PORT_PROPERTY = "documentationSite.port"
         const val DEFAULT_PORT = 8000
-        const val DEFAULT_MAX_LINE_LENGTH = 120
         val PLANTUML_INCLUDES = listOf("**/*.puml", "**/*.iuml", "**/*.plantuml", "**/*.pu")
 
         /** Whether the module [path] is documented: listed in [included] or none listed, and not under [excluded]. */

@@ -33,7 +33,7 @@ enum class AnchorStyle { GITLAB, GITHUB }
  *
  * One instance numbers the headings of one page.
  */
-internal class HeadingAnchors(private val style: AnchorStyle = AnchorStyle.GITLAB) {
+internal class HeadingAnchors(private val style: AnchorStyle = AnchorStyle.GITHUB) {
     private val counters = mutableMapOf<String, Int>()
 
     /** Id of the next heading of the page with the text [text]. */
@@ -51,7 +51,7 @@ internal class HeadingAnchors(private val style: AnchorStyle = AnchorStyle.GITLA
         private val DIGITS = Regex("\\d+")
 
         /** Id of a heading with the text [text] before the repeated ids are numbered. */
-        fun slug(text: String, style: AnchorStyle = AnchorStyle.GITLAB): String {
+        fun slug(text: String, style: AnchorStyle = AnchorStyle.GITHUB): String {
             val id = text.lowercase()
                 .replace(REJECTED, "")
                 .replace(' ', '-')

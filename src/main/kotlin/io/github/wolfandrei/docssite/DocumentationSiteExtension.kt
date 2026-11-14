@@ -38,10 +38,13 @@ abstract class DocumentationSiteExtension @Inject constructor(objects: ObjectFac
     /** The home page of the site; by default `README.md`. A missing file is skipped. */
     abstract val readme: RegularFileProperty
 
-    /** Directory of the documentation; by default `documentation`. */
+    /**
+     * Directory of the documentation; by default `documentation` if it exists, otherwise `docs` if it exists,
+     * otherwise `documentation`.
+     */
     abstract val documentationDirectory: DirectoryProperty
 
-    /** Table of contents, the root of the sidebar; by default `documentation/index.md`. */
+    /** Table of contents, the root of the sidebar; by default `index.md` of [documentationDirectory]. */
     abstract val index: RegularFileProperty
 
     /** Markdown pages outside [documentationDirectory], such as README files of modules. */
@@ -61,8 +64,9 @@ abstract class DocumentationSiteExtension @Inject constructor(objects: ObjectFac
     abstract val language: Property<String>
 
     /**
-     * Rules of the heading ids: `gitlab` (default) or `github`. They differ only for a heading with a run of
-     * hyphens or spaces, such as `A - B`, and for a heading of digits only.
+     * Rules of the heading ids: `github` (default) or `gitlab`. They differ only for a heading with a run of
+     * hyphens or spaces, such as `A - B`, and for a heading of digits only. A repository hosted on GitLab sets
+     * `anchorStyle.set("gitlab")`.
      */
     abstract val anchorStyle: Property<String>
 
@@ -179,8 +183,9 @@ abstract class DocumentationSiteExtension @Inject constructor(objects: ObjectFac
         abstract val runWithCheck: Property<Boolean>
 
         /**
-         * Longest Markdown line outside code blocks; by default `120`, `0` turns the check off. While the check is on,
-         * the rule MD013 of the Markdown linter is off.
+         * Longest Markdown line outside code blocks, `0` turns the check off. By default the `max_line_length` of
+         * `.editorconfig` for the Markdown files of the documentation (`off` is `0`), and `0` without it. While the
+         * limit is not `0`, the rule MD013 of the Markdown linter is off.
          */
         abstract val maxLineLength: Property<Int>
 
@@ -190,7 +195,7 @@ abstract class DocumentationSiteExtension @Inject constructor(objects: ObjectFac
         /** Characters a Markdown page must not contain outside code, such as the long dash `—`; by default none. */
         abstract val forbiddenCharacters: ListProperty<String>
 
-        /** Whether a committed SVG next to its `.puml` must match the source; by default `true`. */
+        /** Whether a committed SVG next to its `.puml` must match the source; by default `false`. */
         abstract val committedDiagrams: Property<Boolean>
 
         /** Directory names that are not part of the repository for the links; by default build and cache dirs. */
@@ -208,7 +213,7 @@ abstract class DocumentationSiteExtension @Inject constructor(objects: ObjectFac
      * root itself, `.rumdl.toml` or `.markdownlint.json` and others, so that the editors see the same rules.
      *
      * The plugin checks the relative links and the anchors itself, so the rules MD051 and MD057 are always off, and
-     * MD013 is off while [Checks.maxLineLength] is not `0`.
+     * MD013 is off while the limit of [Checks.maxLineLength] is not `0`.
      */
     abstract class MarkdownLint {
         /** Whether the pages are checked with rumdl; by default `true`. */

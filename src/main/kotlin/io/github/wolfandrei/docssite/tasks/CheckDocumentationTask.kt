@@ -78,8 +78,14 @@ internal abstract class CheckDocumentationTask : DefaultTask() {
     @get:PathSensitive(PathSensitivity.NONE)
     abstract val plantUmlReport: RegularFileProperty
 
+    /** By default the `max_line_length` of `.editorconfig`, see [editorConfigFiles]. */
     @get:Input
     abstract val maxLineLength: Property<Int>
+
+    /** `.editorconfig` files that may give the default [maxLineLength]; missing ones are skipped. */
+    @get:InputFiles
+    @get:PathSensitive(PathSensitivity.NONE)
+    abstract val editorConfigFiles: ConfigurableFileCollection
 
     @get:Input
     abstract val lineLengthInTables: Property<Boolean>
