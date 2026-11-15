@@ -171,7 +171,7 @@ What the plugin expects from the layout of the documentation, and how to change 
 | `## Contents` and the like is an in-page contents list                                           | `navigation.contentsHeadings`              |
 | `## How-to`, `## Reference` and the like are groups with known titles                            | `navigation.groupTitles`                   |
 | A library is a directory under the documentation directory named as its Dokka module             | `apiReference.libraries`                   |
-| The API of a library goes under its `Reference` group or entry                                   | `apiReference.referenceHeadings`           |
+| The API of a library goes under its `Reference` group or entry; the group may have no pages      | `apiReference.referenceHeadings`           |
 | The page of a library is a table of contents directly in its directory, shown with a large title | `navigation.hubs`                          |
 | Any `.html` of the documentation is an interactive page                                          | none                                       |
 | A `.puml` next to a `.svg` of the same name is the source of that diagram                        | none                                       |

@@ -110,6 +110,33 @@ internal class SiteNavigationTest {
     }
 
     @Test
+    fun `a reference heading without pages holds the API, and disappears without one`() {
+        val index = MarkdownPage(
+            "doc/lib/index.md",
+            "# lib\n\n## How-to\n\n- [Usage](how-to/usage.md)\n\n## Reference\n\n- API - KDoc of the public types.\n",
+        )
+        val pages = mapOf(
+            "doc/index.md" to MarkdownPage("doc/index.md", "# Docs\n\n- [lib](lib/index.md) - lib.\n"),
+            index.path to index,
+            "doc/lib/how-to/usage.md" to MarkdownPage("doc/lib/how-to/usage.md", "# Usage\n"),
+        )
+        fun build(apiPages: List<ApiPage>) = SiteNavigation(pages, emptySet(), UiText.of("en"), NavigationOptions())
+            .build(
+                readme = null,
+                index = "doc/index.md",
+                apiModules = if (apiPages.isEmpty()) emptyList() else listOf(ApiModuleEntry("lib", "lib")),
+                apiPages = apiPages,
+            )
+            .find("lib")!!
+
+        assertEquals(
+            "lib\n  How-to guides\n    Usage\n  Reference\n    API\n      com.example\n        Greeter\n",
+            build(api("lib", "Greeter")).outline(),
+        )
+        assertEquals("lib\n  How-to guides\n    Usage\n", build(emptyList()).outline())
+    }
+
+    @Test
     fun `a module without a library goes to the top-level API group`() {
         val api = navigation().last()
 

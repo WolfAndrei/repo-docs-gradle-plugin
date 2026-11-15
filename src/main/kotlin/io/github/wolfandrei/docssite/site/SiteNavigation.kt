@@ -88,9 +88,9 @@ internal data class NavigationItem(
  *
  * The API of a Dokka module lives under its library, the directory `documentation/<module>/` (see
  * [NavigationOptions.libraries]): its tree `API -> package -> types` goes under the reference of the library (a group
- * or an entry named by [NavigationOptions.referenceHeadings]), or at the end of the library without one. The modules
- * without a library form the top-level group «API». The interactive pages of a library that no table of contents
- * mentions form its group «Interactive pages».
+ * or an entry named by [NavigationOptions.referenceHeadings]; such a group may have no pages of its own), or at the end
+ * of the library without one. The modules without a library form the top-level group «API». The interactive pages
+ * of a library that no table of contents mentions form its group «Interactive pages».
  */
 internal class SiteNavigation(
     private val pages: Map<String, MarkdownPage>,
@@ -150,6 +150,7 @@ internal class SiteNavigation(
             val root = apiPages.firstOrNull { it.type == ApiPageType.ROOT }?.path
             items += NavigationItem(text["api"], root, orphans)
         }
+        items.replaceAll { it.withoutEmptyGroups() }
 
         val interactiveTitle = groupTitle(INTERACTIVE)
         val listedBefore = items.flatMap { it.paths().toList() }.toSet()
@@ -245,6 +246,10 @@ internal class SiteNavigation(
         return null
     }
 
+    /** This item without the groups that are left empty, such as a reference group of a library without API. */
+    private fun NavigationItem.withoutEmptyGroups(): NavigationItem =
+        copy(children = children.map { it.withoutEmptyGroups() }.filterNot { it.path == null && it.children.isEmpty() })
+
     private fun isReference(title: String): Boolean =
         title.trim().let { trimmed ->
             trimmed.equals(referenceTitle, ignoreCase = true) ||
@@ -276,7 +281,10 @@ internal class SiteNavigation(
 
         fun closeGroup() {
             val children = group ?: return
-            if (children.isNotEmpty()) items += NavigationItem(groupTitle.orEmpty(), null, children)
+            // A reference group stays even without pages: the API of the library goes there.
+            if (children.isNotEmpty() || isReference(groupTitle.orEmpty())) {
+                items += NavigationItem(groupTitle.orEmpty(), null, children)
+            }
             group = null
         }
 
