@@ -164,11 +164,14 @@ internal class DocumentationChecker(private val sources: DocumentationSources) {
         return problems
     }
 
-    /** A line with an address or one that fits once the link destinations are removed. */
+    /**
+     * A line with an address or one that fits once the link destinations are removed, those of the inline links and
+     * of a link reference definition (`[label]: path "title"`).
+     */
     private fun exemptFromLength(line: String): Boolean {
         if ("://" in line) return true
 
-        val withoutDestinations = line.replace(LINK_DESTINATION, "]()")
+        val withoutDestinations = line.replace(LINK_DESTINATION, "]()").replace(DEFINITION_DESTINATION, "]:")
         return withoutDestinations.codePointCount(0, withoutDestinations.length) <= sources.maxLineLength
     }
 
@@ -189,5 +192,6 @@ internal class DocumentationChecker(private val sources: DocumentationSources) {
         const val USER_CONTENT = "user-content-"
         val INLINE_CODE = Regex("`[^`]*`")
         val LINK_DESTINATION = Regex("""]\([^)\s]*(\s+"[^"]*")?\)""")
+        val DEFINITION_DESTINATION = Regex("""(?<=^ {0,3}\[[^\]]{1,999})]:\s*(<[^>]*>|\S+)(\s+("[^"]*"|'[^']*'|\([^)]*\)))?\s*$""")
     }
 }

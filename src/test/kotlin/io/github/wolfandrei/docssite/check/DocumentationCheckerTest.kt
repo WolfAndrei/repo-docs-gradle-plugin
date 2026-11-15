@@ -57,10 +57,13 @@ internal class DocumentationCheckerTest {
         |Строка текста длиннее сорока символов без ссылок.
         |Строка со ссылкой [README](../README.md#раздел) короче.
         |Код `a — b` и [адрес](https://example.com/очень/длинный/адрес/страницы).
+        |
+        |[Пример.kt]: ../../sample/src/main/kotlin/com/example/sample/Пример.kt
+        |[путь]: <../../sample/src/main/kotlin/com/example/Длинный путь.kt> "Пример"
     """.trimMargin()
 
     @Test
-    fun `rows of tables, links, addresses and code are not counted`() {
+    fun `rows of tables, links, link reference definitions, addresses and code are not counted`() {
         assertEquals(listOf("documentation/page.md:6: line is 49 characters, longer than 40"), check(page))
     }
 

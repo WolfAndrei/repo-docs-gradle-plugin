@@ -374,7 +374,7 @@ browser.
 
 Line length and characters are not checked in code blocks, characters not in inline code either. Line length is not
 checked for table rows (unless `lineLengthInTables`) and for lines with an address (`://`); other lines are measured
-without the link targets `](...)`. For an anchor with a wrong case or hyphens the check suggests an existing one:
+without the link targets: `](...)` of inline links and the path of a link reference definition `[label]: path`. For an anchor with a wrong case or hyphens the check suggests an existing one:
 `did you mean #storage-format?`. A page that no other page links to, except README and `index.md`, is reported as a
 warning and does not fail the build.
 
