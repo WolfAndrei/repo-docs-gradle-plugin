@@ -54,7 +54,7 @@ internal class MarkdownLintPluginTest {
 
     @Test
     fun `check passes with the configuration of the repository`() {
-        val result = fixture.run("documentationCheck")
+        val result = fixture.run("docsCheck")
 
         assertTrue("no problems" in result.output) { result.output }
     }
@@ -65,7 +65,7 @@ internal class MarkdownLintPluginTest {
             "\n## Пример\n\nПробелы в конце   \n\n```\nкод\n```\n\nНет якоря: [якорь](#нет-такого).\n"
         )
 
-        val result = fixture.run("documentationCheck", expectFailure = true)
+        val result = fixture.run("docsCheck", expectFailure = true)
         val output = result.output
 
         listOf(
@@ -85,31 +85,31 @@ internal class MarkdownLintPluginTest {
         fixture.file("build.gradle.kts").appendText(
             "\ndocumentationSite.checks.markdownLint.configFile.set(file(\"lint/markdownlint.json\"))\n"
         )
-        assertTrue("no problems" in fixture.run("documentationCheck").output)
+        assertTrue("no problems" in fixture.run("docsCheck").output)
 
         // .rumdl.toml of the root is not read: MD024 it turns off is reported.
         fixture.file("lint/markdownlint.json").writeText("{ \"MD041\": false }\n")
-        val output = fixture.run("documentationCheck", expectFailure = true).output
+        val output = fixture.run("docsCheck", expectFailure = true).output
         assertTrue("[MD009]" in output && "[MD024]" in output) { output }
 
         fixture.file("build.gradle.kts")
             .appendText("\ndocumentationSite.checks.markdownLint.disable(\"MD009\", \"md024\")\n")
-        assertTrue("no problems" in fixture.run("documentationCheck").output)
+        assertTrue("no problems" in fixture.run("docsCheck").output)
     }
 
     @Test
     fun `check is reused from the configuration cache and reruns when the rumdl configuration changes`() {
-        val tasks = arrayOf("documentationCheck", "--configuration-cache")
+        val tasks = arrayOf("docsCheck", "--configuration-cache")
         fixture.run(*tasks)
 
         val second = fixture.run(*tasks)
         assertTrue("Reusing configuration cache" in second.output) { second.output }
-        assertEquals(TaskOutcome.UP_TO_DATE, second.task(":documentationCheck")?.outcome) { second.output }
+        assertEquals(TaskOutcome.UP_TO_DATE, second.task(":docsCheck")?.outcome) { second.output }
 
         fixture.file(".rumdl.toml").writeText("[global]\ndisable = [\"MD041\", \"MD024\", \"MD022\"]\n")
         val changed = fixture.run(*tasks)
         assertTrue("Reusing configuration cache" in changed.output) { changed.output }
-        assertEquals(TaskOutcome.SUCCESS, changed.task(":documentationCheck")?.outcome) { changed.output }
+        assertEquals(TaskOutcome.SUCCESS, changed.task(":docsCheck")?.outcome) { changed.output }
 
         // rumdl takes the configuration of the nearest directory of a page.
         fixture.file("documentation/lib/how-to/usage.md").appendText("\nПробелы в конце   \n")
@@ -117,7 +117,7 @@ internal class MarkdownLintPluginTest {
             .writeText("extends = \"../../../.rumdl.toml\"\n\n[global]\nextend-disable = [\"MD009\"]\n")
         val nested = fixture.run(*tasks)
         assertTrue("Reusing configuration cache" in nested.output) { nested.output }
-        assertEquals(TaskOutcome.SUCCESS, nested.task(":documentationCheck")?.outcome) { nested.output }
+        assertEquals(TaskOutcome.SUCCESS, nested.task(":docsCheck")?.outcome) { nested.output }
         fixture.file("documentation/lib/how-to/.rumdl.toml").writeText("extends = \"../../../.rumdl.toml\"\n")
         assertTrue("[MD009]" in fixture.run(*tasks, expectFailure = true).output)
     }
@@ -142,7 +142,7 @@ internal class MarkdownLintPluginTest {
         )
         fixture.file("documentation/lib/index.md").appendText("- [Таблица](how-to/table.md) - таблица.\n")
 
-        fixture.run("documentationFormat", "--configuration-cache")
+        fixture.run("docsFormat", "--configuration-cache")
 
         assertEquals(
             """
@@ -160,6 +160,6 @@ internal class MarkdownLintPluginTest {
             """.trimMargin(),
             fixture.file("documentation/lib/how-to/table.md").readText(),
         )
-        assertTrue("no problems" in fixture.run("documentationCheck").output)
+        assertTrue("no problems" in fixture.run("docsCheck").output)
     }
 }

@@ -28,7 +28,7 @@ import org.gradle.api.tasks.UntrackedTask
 /**
  * Fixes the Markdown pages of the documentation in place with `rumdl fmt`: what the rules of the rumdl configuration
  * can fix, such as trailing spaces, blank lines around headings or the alignment of tables. What cannot be fixed is
- * left to `documentationCheck`.
+ * left to `docsCheck`.
  */
 @UntrackedTask(because = "Rewrites the documentation sources in place")
 internal abstract class FormatDocumentationTask : DefaultTask() {
@@ -44,7 +44,7 @@ internal abstract class FormatDocumentationTask : DefaultTask() {
     @TaskAction
     fun format() {
         if (!markdownLint.enabled.get()) {
-            throw GradleException("documentationFormat needs rumdl: documentationSite.checks.markdownLint.enabled is false")
+            throw GradleException("docsFormat needs rumdl: documentationSite.checks.markdownLint.enabled is false")
         }
         val root = repositoryRoot.get().asFile
         val pages = pages.relativeTo(root).keys.toList()

@@ -1,7 +1,7 @@
 # Configuration and tasks
 
 The `documentationSite { ... }` block of the root project, the Gradle tasks, the command line properties, the files
-and the rules of `documentationCheck`. How to use them is in [How to set up, build, serve and check the
+and the rules of `docsCheck`. How to use them is in [How to set up, build, serve and check the
 site](../how-to/usage.md).
 
 ## Contents
@@ -25,7 +25,7 @@ site](../how-to/usage.md).
 Paths are relative to the directory of the root project.
 
 | Property                 | Type                         | Default                             | Purpose                                                     |
-|--------------------------|------------------------------|-------------------------------------|-------------------------------------------------------------|
+| ------------------------ | ---------------------------- | ----------------------------------- | ----------------------------------------------------------- |
 | `title`                  | `Property<String>`           | name of the root project            | Title in the header of every page                           |
 | `readme`                 | `RegularFileProperty`        | `README.md`                         | Home page; skipped if the file is missing                   |
 | `documentationDirectory` | `DirectoryProperty`          | `documentation` or `docs`           | Directory of the documentation                              |
@@ -42,7 +42,7 @@ included.
 
 `sourceBrowseUrl` has the form `https://gitlab.example.com/group/repo/-/blob/main/`: a link to
 `lib/build.gradle.kts` becomes `<sourceBrowseUrl>lib/build.gradle.kts`. Without it such a link stays relative and
-only `documentationServe` opens it, from the repository.
+only `docs` opens it, from the repository.
 
 `language` sets every string of the interface: the header, the search, the sidebar groups, the sections and kinds of
 the API pages, the diagram buttons. The pages themselves are not translated.
@@ -60,7 +60,7 @@ documentationSite {
 ## plantUml
 
 | Property        | Type               | Default    | Purpose                                                        |
-|-----------------|--------------------|------------|----------------------------------------------------------------|
+| --------------- | ------------------ | ---------- | -------------------------------------------------------------- |
 | `version`       | `Property<String>` | `1.2026.9` | Version of PlantUML for the build and for the browser          |
 | `layout`        | `Property<String>` | `auto`     | Layout engine of the build: `auto`, `dot`, `smetana`           |
 | `dotExecutable` | `Property<String>` | not set    | Path of Graphviz `dot`; without it `GRAPHVIZ_DOT`, then `PATH` |
@@ -82,14 +82,14 @@ documentationSite {
 - `browser` - every diagram in the browser; the sprites of the standard library are left out;
 - `build` - every diagram at build time; the browser engine is not copied to the site.
 
-Without the npm package every diagram is drawn at build time and `documentationSite` warns
+Without the npm package every diagram is drawn at build time and `docsBuild` warns
 `The browser build of PlantUML is not available`. Details are in
 [PlantUML diagrams](../explanation/architecture.md#plantuml-diagrams).
 
 ## apiReference
 
 | Property            | Type                          | Default                   | Purpose                                                |
-|---------------------|-------------------------------|---------------------------|--------------------------------------------------------|
+| ------------------- | ----------------------------- | ------------------------- | ------------------------------------------------------ |
 | `enabled`           | `Property<Boolean>`           | `true`                    | Whether the site has the API reference                 |
 | `modules`           | `SetProperty<String>`         | empty                     | If not empty, only these modules are documented        |
 | `excludedModules`   | `SetProperty<String>`         | empty                     | Excluded modules; a path also excludes its nested ones |
@@ -107,7 +107,7 @@ in the language counts too.
 ## navigation
 
 | Property           | Type                          | Default                                                     | Purpose                                        |
-|--------------------|-------------------------------|-------------------------------------------------------------|------------------------------------------------|
+| ------------------ | ----------------------------- | ----------------------------------------------------------- | ---------------------------------------------- |
 | `groupTitles`      | `MapProperty<String, String>` | empty                                                       | Titles of the sidebar groups by heading        |
 | `titleSource`      | `Property<String>`            | `heading`                                                   | Title of an entry: `heading` or `link`         |
 | `hubs`             | `ListProperty<String>`        | `index.md`, `README.md`, `*-index.md`, `*_index.md`         | Globs of the tables of contents                |
@@ -118,7 +118,7 @@ in the language counts too.
 The defaults of the language:
 
 | Heading                 | `en`                   | `ru`                   |
-|-------------------------|------------------------|------------------------|
+| ----------------------- | ---------------------- | ---------------------- |
 | `how-to`, `how to`      | How-to guides          | Инструкции             |
 | `reference`             | Reference              | Справочник             |
 | `explanation`           | Explanation            | Устройство             |
@@ -163,8 +163,8 @@ never the title of the page.
 What the plugin expects from the layout of the documentation, and how to change it.
 
 | Convention                                                                                       | Override                                   |
-|--------------------------------------------------------------------------------------------------|--------------------------------------------|
-| The documentation is in `documentation/` or `docs/`, its table of contents is `index.md`          | `documentationDirectory`, `index`          |
+| ------------------------------------------------------------------------------------------------ | ------------------------------------------ |
+| The documentation is in `documentation/` or `docs/`, its table of contents is `index.md`         | `documentationDirectory`, `index`          |
 | README is the home page                                                                          | `readme`                                   |
 | A table of contents is `index.md`, `README.md`, `*-index.md` or a page of links                  | `navigation.hubs`, `navigation.detectHubs` |
 | An entry shows the heading of its page                                                           | `navigation.titleSource`                   |
@@ -188,8 +188,8 @@ interactive page is found by its file type wherever it lies.
 ## checks
 
 | Property              | Type                   | Default                                        | Purpose                                         |
-|-----------------------|------------------------|------------------------------------------------|-------------------------------------------------|
-| `runWithCheck`        | `Property<Boolean>`    | `false`                                        | Whether `check` depends on `documentationCheck` |
+| --------------------- | ---------------------- | ---------------------------------------------- | ----------------------------------------------- |
+| `runWithCheck`        | `Property<Boolean>`    | `false`                                        | Whether `check` depends on `docsCheck`          |
 | `maxLineLength`       | `Property<Int>`        | `max_line_length` of `.editorconfig`, else `0` | Longest Markdown line; `0` turns the check off  |
 | `lineLengthInTables`  | `Property<Boolean>`    | `false`                                        | Whether the rows of tables are checked          |
 | `forbiddenCharacters` | `ListProperty<String>` | empty                                          | Characters a page must not contain, such as `—` |
@@ -202,7 +202,7 @@ interactive page is found by its file type wherever it lies.
 table of contents `index`, from the `.editorconfig` files of its directory and the directories above it up to the
 one with `root = true`. A later section overrides an earlier one, a closer file a farther one; section globs such as
 `[*]`, `[*.md]` and `[*.{md,kt}]` work. `off`, no value or no `.editorconfig` mean no limit, `0`. The files are
-inputs of `documentationCheck`, and an explicit `maxLineLength.set(...)` wins over them:
+inputs of `docsCheck`, and an explicit `maxLineLength.set(...)` wins over them:
 
 ```editorconfig
 [*]
@@ -221,12 +221,12 @@ The default `excludedDirectories`: `.git`, `.gradle`, `.idea`, `.kotlin`, `.cxx`
 
 ## checks.markdownLint
 
-The [rumdl](https://github.com/rvben/rumdl) Markdown linter of `documentationCheck` and `documentationFormat`. The
+The [rumdl](https://github.com/rvben/rumdl) Markdown linter of `docsCheck` and `docsFormat`. The
 rules themselves are configured in the files of the repository, see
 [Lint the Markdown pages](../how-to/usage.md#lint-the-markdown-pages).
 
 | Property          | Type                          | Default             | Purpose                                             |
-|-------------------|-------------------------------|---------------------|-----------------------------------------------------|
+| ----------------- | ----------------------------- | ------------------- | --------------------------------------------------- |
 | `enabled`         | `Property<Boolean>`           | `true`              | Whether the pages are checked with rumdl            |
 | `executable`      | `RegularFileProperty`         | not set             | A local rumdl binary; nothing is downloaded with it |
 | `version`         | `Property<String>`            | `0.3.4`             | Version of rumdl to download                        |
@@ -252,7 +252,7 @@ documentationSite {
 placeholders:
 
 | Placeholder | Replaced with                    | Example                                         |
-|-------------|----------------------------------|-------------------------------------------------|
+| ----------- | -------------------------------- | ----------------------------------------------- |
 | `{version}` | `version`                        | `0.3.4`                                         |
 | `{target}`  | Target of the machine, see below | `x86_64-unknown-linux-musl`                     |
 | `{asset}`   | File name of the release archive | `rumdl-v0.3.4-x86_64-unknown-linux-musl.tar.gz` |
@@ -264,7 +264,7 @@ messages. `file:` addresses work too.
 The target is chosen by `os.name` and `os.arch` of the Gradle JVM:
 
 | Machine                | Target                       | Archive   |
-|------------------------|------------------------------|-----------|
+| ---------------------- | ---------------------------- | --------- |
 | macOS on Apple silicon | `aarch64-apple-darwin`       | `.tar.gz` |
 | macOS on Intel         | `x86_64-apple-darwin`        | `.tar.gz` |
 | Linux x64              | `x86_64-unknown-linux-musl`  | `.tar.gz` |
@@ -297,38 +297,38 @@ The plugin also turns off the rules it checks itself, see [Rules shared with rum
 ## serve
 
 | Property | Type            | Default | Purpose                           |
-|----------|-----------------|---------|-----------------------------------|
+| -------- | --------------- | ------- | --------------------------------- |
 | `port`   | `Property<Int>` | `8000`  | Port of the server on `localhost` |
 
 ## Tasks
 
-| Task                          | What it does                                                           |
-|-------------------------------|------------------------------------------------------------------------|
-| `documentationSite`           | Builds the site in `outputDirectory`                                   |
-| `documentationServe`          | Builds the site and serves it on `localhost:<port>` until Ctrl+C       |
-| `documentationCheck`          | Checks the documentation by the [rules](#check-rules), fails on errors |
-| `documentationFormat`         | Fixes the Markdown pages in place with `rumdl fmt`                     |
-| `documentationRenderDiagrams` | Draws the `.puml` files to SVG and writes preprocessed sources         |
-| `documentationApiReference`   | Joins the Dokka HTML of the modules into one reference                 |
+| Task                 | What it does                                                           |
+| -------------------- | ---------------------------------------------------------------------- |
+| `docsBuild`          | Builds the site in `outputDirectory`                                   |
+| `docs`               | Builds the site and serves it on `localhost:<port>` until Ctrl+C       |
+| `docsCheck`          | Checks the documentation by the [rules](#check-rules), fails on errors |
+| `docsFormat`         | Fixes the Markdown pages in place with `rumdl fmt`                     |
+| `docsRenderDiagrams` | Draws the `.puml` files to SVG and writes preprocessed sources         |
+| `docsApiReference`   | Joins the Dokka HTML of the modules into one reference                 |
 
-All tasks but `documentationServe` and `documentationFormat` are cacheable and compatible with the configuration
-cache and with isolated projects. `documentationFormat` changes the sources, so it is never up to date and is not
-cached; it is compatible with the configuration cache too. `documentationServe` does not rebuild the site:
-`./gradlew documentationSite --continuous` in a second terminal does. `documentationRenderDiagrams` without
-`.puml` files and `documentationApiReference` without modules with Dokka are skipped (`NO-SOURCE`) and download
+All tasks but `docs` and `docsFormat` are cacheable and compatible with the configuration
+cache and with isolated projects. `docsFormat` changes the sources, so it is never up to date and is not
+cached; it is compatible with the configuration cache too. `docs` does not rebuild the site:
+`./gradlew docsBuild --continuous` in a second terminal does. `docsRenderDiagrams` without
+`.puml` files and `docsApiReference` without modules with Dokka are skipped (`NO-SOURCE`) and download
 nothing. The tasks are in the `documentation` group of `./gradlew tasks`.
 
 ## Command line properties
 
-| Parameter                         | Effect                                                |
-|-----------------------------------|-------------------------------------------------------|
-| `-PdocumentationSite.port=<port>` | Replaces the default port `8000`                      |
-| `--port=<port>`                   | Option of `documentationServe`, replaces `serve.port` |
+| Parameter                         | Effect                                  |
+| --------------------------------- | --------------------------------------- |
+| `-PdocumentationSite.port=<port>` | Replaces the default port `8000`        |
+| `--port=<port>`                   | Option of `docs`, replaces `serve.port` |
 
 ## Files
 
 | Path                                   | Content                                                                        |
-|----------------------------------------|--------------------------------------------------------------------------------|
+| -------------------------------------- | ------------------------------------------------------------------------------ |
 | `build/docs-site/`                     | The site; its directories repeat those of the repository                       |
 | `build/docs-site/index.html`           | Home page: a copy of `README.html`                                             |
 | `build/docs-site/api/`                 | API pages, `api/<module>/<package>/...`                                        |
@@ -340,18 +340,18 @@ nothing. The tasks are in the `documentation` group of `./gradlew tasks`.
 | `build/docs-site-diagrams/source/`     | Preprocessed sources `.preproc`: every `!include` expanded                     |
 | `build/docs-site-diagrams-report.json` | PlantUML errors and the layout engine used                                     |
 | `build/docs-site-api/`                 | The joined Dokka output before it becomes API pages                            |
-| `build/docs-site-check/report.txt`     | All problems of the last `documentationCheck`                                  |
+| `build/docs-site-check/report.txt`     | All problems of the last `docsCheck`                                           |
 
 Outside the repository:
 
 | Path                                                            | Content                                                    |
-|-----------------------------------------------------------------|------------------------------------------------------------|
+| --------------------------------------------------------------- | ---------------------------------------------------------- |
 | `<Gradle user home>/caches/docs-site/rumdl/<version>/<target>/` | The downloaded rumdl binary and the SHA-256 of its archive |
 
 The Gradle user home is `~/.gradle` unless `GRADLE_USER_HOME` or `--gradle-user-home` says otherwise.
 
 The configuration files rumdl reads in the directory of a page and in every directory above it, up to the root
-project, are inputs of `documentationCheck`: `.rumdl.toml`, `rumdl.toml`, `.config/rumdl.toml`, `pyproject.toml`,
+project, are inputs of `docsCheck`: `.rumdl.toml`, `rumdl.toml`, `.config/rumdl.toml`, `pyproject.toml`,
 `.markdownlint.json`, `.markdownlint.jsonc`, `.markdownlint.yaml`, `.markdownlint.yml` and `.markdownlintignore`.
 
 `_assets/plantuml/` takes 6.7 MB with version `1.2026.9` and is copied only if at least one diagram is drawn in the
@@ -360,7 +360,7 @@ browser.
 ## Check rules
 
 | Rule                | Error                                                                                 |
-|---------------------|---------------------------------------------------------------------------------------|
+| ------------------- | ------------------------------------------------------------------------------------- |
 | Link to a file      | The target of a relative link or image, `href` and `src` of HTML included, is missing |
 | Table of contents   | An `index.md` links to a missing page                                                 |
 | Anchor              | `#anchor` is not a heading of the target page by the rules of `anchorStyle`           |
@@ -385,7 +385,7 @@ Some rules of rumdl check what the plugin checks itself. The plugin keeps its ow
 that a problem is reported once:
 
 | rumdl rule           | Plugin check   | Why the plugin check stays                                                           |
-|----------------------|----------------|--------------------------------------------------------------------------------------|
+| -------------------- | -------------- | ------------------------------------------------------------------------------------ |
 | MD051 link fragments | Anchor         | MD051 follows the GitHub anchors; the plugin follows `anchorStyle`, GitLab or GitHub |
 | MD057 relative links | Link to a file | The plugin also checks `index.md` entries, HTML pages and diagrams not committed     |
 | MD013 line length    | Line length    | Off only while `maxLineLength` is not `0`; the plugin skips link targets and tables  |
@@ -397,7 +397,7 @@ does not overlap `forbiddenCharacters` unless both are configured.
 ## Dependencies
 
 | Dependency                                         | Version    | Where                                     |
-|----------------------------------------------------|------------|-------------------------------------------|
+| -------------------------------------------------- | ---------- | ----------------------------------------- |
 | `org.commonmark:commonmark` and GFM extensions     | `0.31.0`   | The plugin: Markdown                      |
 | `org.jsoup:jsoup`                                  | `1.16.1`   | The plugin: Dokka and interactive pages   |
 | `org.jetbrains.kotlinx:kotlinx-serialization-json` | `1.7.1`    | The plugin: indexes and reports           |

@@ -27,7 +27,7 @@ import org.gradle.api.tasks.options.Option
 
 /**
  * Serves the site directory on `localhost` until the build is stopped with Ctrl+C. The task does not rebuild the
- * site: `./gradlew documentationSite --continuous` in another terminal does, and the pages reload themselves when the
+ * site: `./gradlew docsBuild --continuous` in another terminal does, and the pages reload themselves when the
  * build stamp of the site changes.
  */
 @UntrackedTask(because = "Serves the site until the build is stopped")
@@ -51,7 +51,7 @@ internal abstract class ServeDocumentationSiteTask : DefaultTask() {
         val server = DocumentationServer(siteDirectory.get().asFile, repositoryRoot.get().asFile, port.get())
         server.start()
         logger.lifecycle("Documentation site is served at ${server.url}")
-        logger.lifecycle("Rebuild it with ./gradlew documentationSite --continuous; press Ctrl+C to stop the server.")
+        logger.lifecycle("Rebuild it with ./gradlew docsBuild --continuous; press Ctrl+C to stop the server.")
         try {
             while (!Thread.currentThread().isInterrupted) {
                 Thread.sleep(POLL_MILLIS)

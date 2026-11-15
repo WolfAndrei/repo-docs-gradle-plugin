@@ -3,7 +3,7 @@
 A Gradle plugin that turns the documentation of a repository into a static site: the Markdown pages of
 `README.md` and `documentation/` (or `docs/`), PlantUML diagrams drawn from their sources, interactive HTML pages
 and the Dokka API reference of the modules, under one navigation with one search. The site works offline, from the
-file system or from a local server with live reload, and `documentationCheck` finds broken links, anchors and stale
+file system or from a local server with live reload, and `docsCheck` finds broken links, anchors and stale
 diagrams and lints the Markdown with rumdl.
 
 ![An API page of a generated site](docs/images/site.png)
@@ -26,7 +26,7 @@ diagrams and lints the Markdown with rumdl.
 - **Checks**: links, anchors, PlantUML errors, line length (the limit of `.editorconfig`), forbidden characters and,
   optionally, committed SVG out of date with its source.
 - **Markdown linter.** [rumdl](https://github.com/rvben/rumdl) checks the pages by the markdownlint rules of the
-  repository's own `.markdownlint.json` or `.rumdl.toml`, and `documentationFormat` fixes what it can, tables
+  repository's own `.markdownlint.json` or `.rumdl.toml`, and `docsFormat` fixes what it can, tables
   included.
 - English or Russian interface; light and dark theme; works on a phone.
 
@@ -67,10 +67,10 @@ plugins {
 Then:
 
 ```shell
-./gradlew documentationSite      # build/docs-site/index.html
-./gradlew documentationServe     # http://localhost:8000/
-./gradlew documentationCheck     # links, anchors, diagrams, style, Markdown lint
-./gradlew documentationFormat    # fixes the Markdown pages in place
+./gradlew docs           # builds the site and serves it on http://localhost:8000/
+./gradlew docsBuild      # build/docs-site/index.html
+./gradlew docsCheck      # links, anchors, diagrams, style, Markdown lint
+./gradlew docsFormat     # fixes the Markdown pages in place
 ```
 
 The API reference needs nothing more than `id("org.jetbrains.dokka") version "2.1.0"` in the modules to document.

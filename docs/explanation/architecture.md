@@ -27,7 +27,7 @@ do. The settings are in [Configuration and tasks](../reference/configuration.md)
 
 The documentation of a repository is written for its Git hosting: relative links between `.md` files, `#anchor`
 links to headings, `.puml` diagrams with their SVG next to them, interactive `.html` pages. The plugin shows the same
-documentation locally and offline, adds the API reference and the search, and `documentationCheck` catches what
+documentation locally and offline, adds the API reference and the search, and `docsCheck` catches what
 breaks the documentation on the hosting: broken links and anchors, stale SVG.
 
 ## Data flow
@@ -35,10 +35,10 @@ breaks the documentation on the hosting: broken links and anchors, stale SVG.
 ```text
 README.md, documentation/**/*.md ──────────────────────────────────────┐
 documentation/** (png, html, puml, iuml) ── copy ──────────────────────┤
-documentation/**/*.puml ── documentationRenderDiagrams ── svg, preproc ┼── documentationSite ── build/docs-site
-modules with Dokka ── dokkaGenerateModuleHtml ── documentationApiReference ┘
+documentation/**/*.puml ── docsRenderDiagrams ── svg, preproc ┼── docsBuild ── build/docs-site
+modules with Dokka ── dokkaGenerateModuleHtml ── docsApiReference ┘
                                    │
-                                   └── report.json ── documentationCheck ── report.txt
+                                   └── report.json ── docsCheck ── report.txt
 ```
 
 The site keeps the layout of the repository: `documentation/lib/how-to/usage.md` becomes
@@ -56,7 +56,7 @@ Markdown is kept as it is. In links, images and the `href`, `src` of inline HTML
 addresses:
 
 | Target of the link                        | On the site                                                         |
-|-------------------------------------------|---------------------------------------------------------------------|
+| ----------------------------------------- | ------------------------------------------------------------------- |
 | a Markdown page of the site               | `.md` -> `.html`, the anchor stays                                  |
 | a `.kt` file named as a type of the API   | the API page of the type, see [Links to the API](#links-to-the-api) |
 | a file or directory of the site           | unchanged                                                           |
@@ -125,7 +125,7 @@ such as `<C4/C4_Context>`.
 
 ### Drawn at build time
 
-`documentationRenderDiagrams` runs PlantUML from the `plantuml-mit` jar in a separate JVM, once per directory with
+`docsRenderDiagrams` runs PlantUML from the `plantuml-mit` jar in a separate JVM, once per directory with
 diagrams, twice: `-tsvg` draws SVG and `-preproc` writes the **preprocessed source**, the text of the diagram with
 every `!include` and macro expanded. No installed PlantUML is needed.
 
@@ -133,13 +133,13 @@ PlantUML lays a diagram out with Graphviz `dot` or with its built-in Smetana eng
 looks for `dot` (`dotExecutable`, `GRAPHVIZ_DOT`, `PATH`) and uses it if found, otherwise Smetana. The `dot` found
 and its version are an input of the task, so machines with and without Graphviz do not share cached SVG. An error
 in a diagram does not stop the build: PlantUML draws the error into the SVG, and the task writes it to the report
-that `documentationCheck` reads.
+that `docsCheck` reads.
 
 ### Drawn in the browser
 
 The browser build of PlantUML is the npm package `@plantuml/core`: PlantUML compiled to JavaScript with TeaVM, with
 Viz.js (Graphviz in WebAssembly) for the `dot` layout. Gradle downloads the package through an Ivy repository over
-the npm registry, and `documentationSite` unpacks the needed files to `_assets/plantuml/`. `plantuml.js` is an ES2015
+the npm registry, and `docsBuild` unpacks the needed files to `_assets/plantuml/`. `plantuml.js` is an ES2015
 module, which a browser does not load from `file://`, so its `export{...}` becomes an assignment to
 `window.PlantUmlJs`; no network is needed to view the site.
 
@@ -156,7 +156,7 @@ The picture is moved by a CSS transform, so it stays vector and sharp at any sca
 that the browser draws later replaces the picture inside the same viewer.
 
 | Input                               | Inline                                             | Full screen             |
-|-------------------------------------|----------------------------------------------------|-------------------------|
+| ----------------------------------- | -------------------------------------------------- | ----------------------- |
 | Ctrl or Cmd + wheel, trackpad pinch | zoom around the pointer                            | zoom around the pointer |
 | Wheel                               | scrolls the page                                   | zoom around the pointer |
 | Drag with the mouse                 | pan                                                | pan                     |
@@ -185,7 +185,7 @@ link or colour in the `.puml` or in an included `.iuml` changes it, a moved elem
 
 The plugin does not apply Dokka. A module that applies Dokka publishes, for aggregation, a variant with the output of
 `dokkaGenerateModuleHtml` (attributes `org.gradle.usage=org.jetbrains.dokka`, `org.jetbrains.dokka.format=html`,
-`org.jetbrains.dokka.module-component=ModuleOutputDirectories`). `documentationApiReference` asks every subproject
+`org.jetbrains.dokka.module-component=ModuleOutputDirectories`). `docsApiReference` asks every subproject
 for this variant by a project dependency, leniently, so a project without it is skipped, and keeps the directories
 with `module-descriptor.json`. The dependencies live in a detached configuration with a root component of its own:
 in a configuration of the root project a module named as the root project has the coordinates of the root and would
@@ -193,7 +193,7 @@ resolve to the root itself. The Dokka command line `dokka-cli` with `dokka-base`
 `all-modules-page-plugin` joins the module outputs, the same step as `dokkaGeneratePublicationHtml` of a root
 project with Dokka.
 
-`documentationSite` does not copy the Dokka site. It parses each Dokka page with jsoup, takes its main content
+`docsBuild` does not copy the Dokka site. It parses each Dokka page with jsoup, takes its main content
 (`.main-content`) and drops the navigation, header, footer, scripts, copy buttons and platform tabs of Dokka. The
 content is rebuilt as a page of a symbol in the site template, at the same path under `api/`, so the links between
 the Dokka pages and their anchors keep working:
@@ -259,7 +259,7 @@ are not highlighted, and neither is inline code. The token colours follow Xcode 
 
 ## Search
 
-`documentationSite` writes the search index: an entry per section of each page (the heading, the address with the
+`docsBuild` writes the search index: an entry per section of each page (the heading, the address with the
 anchor, the text up to 4000 characters), an entry per declaration of the API reference (`Type.member (Function,
 module)` with its documentation) and an entry per interactive page. The index lies in `_assets/search-index.json`
 and `_assets/search-index.js`; a page loads the `.js` with a `<script>` tag, so the search works from the file
@@ -267,12 +267,12 @@ system too. The search finds all words of the query in the title and the text, i
 
 ## Server and live reload
 
-`documentationServe` is a plain task: it starts `com.sun.net.httpserver.HttpServer` of the `jdk.httpserver` module on
+`docs` is a plain task: it starts `com.sun.net.httpserver.HttpServer` of the `jdk.httpserver` module on
 `localhost`, serves the site directory and waits until the build is stopped with Ctrl+C. A path that is not on the
 site is looked up in the repository and served as text, so that links to sources open; paths with hidden directories
 (`.git`) are not served.
 
-A second build, `./gradlew documentationSite --continuous`, rebuilds the site. The last file `documentationSite`
+A second build, `./gradlew docsBuild --continuous`, rebuilds the site. The last file `docsBuild`
 writes is `_assets/build-stamp`, a SHA-256 hash of all files of the site. A page opened from the server polls it once
 a second and reloads when it changes. The hash depends only on the content, so a rebuild without changes does not
 reload the page, and a result from the build cache gives the same hash.
@@ -293,16 +293,16 @@ lock keeps two builds from installing at once. A later build finds the binary an
 network, so `--offline` works. A version changed in the settings needs its own checksums: the plugin never trusts a
 checksum downloaded next to the archive.
 
-`documentationCheck` runs `rumdl check --output-format json` from the root project on its own list of pages, so
+`docsCheck` runs `rumdl check --output-format json` from the root project on its own list of pages, so
 rumdl checks exactly the pages of the site, with the configuration it finds for each of them. The findings join the
 problems of the plugin in the same format and the same report. The plugin turns off the rumdl rules it checks itself
 (MD051, MD057, and MD013 while `maxLineLength` is on): its anchor check knows the GitLab rules besides the GitHub
-ones, its link check knows the tables of contents and the diagrams. `documentationFormat` runs `rumdl fmt` with the
+ones, its link check knows the tables of contents and the diagrams. `docsFormat` runs `rumdl fmt` with the
 same arguments.
 
 ## Caching
 
-- `documentationSite`, `documentationCheck`, `documentationRenderDiagrams` and `documentationApiReference` declare
+- `docsBuild`, `docsCheck`, `docsRenderDiagrams` and `docsApiReference` declare
   their inputs and outputs, are cacheable and compatible with the configuration cache; their input paths are
   relative, so the cache moves between clones.
 - The rumdl binary is identified by its version and checksum, or by the content of `executable`; the configuration
@@ -324,15 +324,15 @@ same arguments.
 - Inline code that names a member by its bare name (`greet`) is not linked; write `Type.member`.
 - An interactive page whose height follows the window (`height: 100vh`) grows with its frame up to 20000 px.
 - The site opens from the file system, but links to sources outside the site without `sourceBrowseUrl` and the live
-  reload work only through `documentationServe`.
+  reload work only through `docs`.
 - The rumdl rules above MD060 exist only in rumdl: the markdownlint extensions of the editors do not show them.
 - A rumdl configuration above the root project or the user configuration of rumdl (`~/.config/rumdl/rumdl.toml`) is
-  read by rumdl, but is not an input of `documentationCheck`: a change of it does not rerun the check.
+  read by rumdl, but is not an input of `docsCheck`: a change of it does not rerun the check.
 
 ## Source layout
 
 | What                                | File in `src/main/kotlin/io/github/wolfandrei/docssite/`                     |
-|-------------------------------------|------------------------------------------------------------------------------|
+| ----------------------------------- | ---------------------------------------------------------------------------- |
 | Plugin, tasks, configurations       | `DocumentationSitePlugin.kt`                                                 |
 | The `documentationSite` block       | `DocumentationSiteExtension.kt`                                              |
 | Markdown, links, anchors            | `markdown/`                                                                  |

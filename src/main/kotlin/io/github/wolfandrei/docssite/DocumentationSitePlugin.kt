@@ -46,11 +46,11 @@ import org.gradle.kotlin.dsl.register
 /**
  * `io.github.wolfandrei.docs-site`: a local site of the repository documentation. Applied to the root project.
  *
- * - `documentationSite` builds the site in `build/docs-site`: README and the Markdown pages of `documentation` as
+ * - `docsBuild` builds the site in `build/docs-site`: README and the Markdown pages of `documentation` as
  *   HTML, the diagrams from their PlantUML sources, the interactive pages, the API reference and the search index;
- * - `documentationServe` serves it on `localhost` until Ctrl+C;
- * - `documentationCheck` checks links, anchors, diagrams and the style of the Markdown pages, also with rumdl;
- * - `documentationFormat` fixes the Markdown pages in place with rumdl.
+ * - `docs` serves it on `localhost` until Ctrl+C;
+ * - `docsCheck` checks links, anchors, diagrams and the style of the Markdown pages, also with rumdl;
+ * - `docsFormat` fixes the Markdown pages in place with rumdl.
  *
  * The plugin configures only the root project: the API reference comes from the Dokka artifacts of the modules that
  * apply Dokka themselves, resolved by project dependencies.
@@ -337,12 +337,12 @@ internal class DocumentationSitePlugin : Plugin<Project> {
     internal companion object {
         const val PLUGIN_ID = "io.github.wolfandrei.docs-site"
         const val GROUP = "documentation"
-        const val SITE_TASK = "documentationSite"
-        const val SERVE_TASK = "documentationServe"
-        const val CHECK_TASK = "documentationCheck"
-        const val FORMAT_TASK = "documentationFormat"
-        const val RENDER_TASK = "documentationRenderDiagrams"
-        const val API_TASK = "documentationApiReference"
+        const val SITE_TASK = "docsBuild"
+        const val SERVE_TASK = "docs"
+        const val CHECK_TASK = "docsCheck"
+        const val FORMAT_TASK = "docsFormat"
+        const val RENDER_TASK = "docsRenderDiagrams"
+        const val API_TASK = "docsApiReference"
         const val PLANTUML_CONFIGURATION = "documentationPlantUml"
         const val PLANTUML_JS_CONFIGURATION = "documentationPlantUmlJs"
         const val DOKKA_CLI_CONFIGURATION = "documentationDokkaCli"

@@ -52,7 +52,7 @@ import org.gradle.process.ExecOperations
  * the built-in Smetana.
  *
  * A diagram with an error does not fail the task: PlantUML draws the error into the SVG, and the task writes it to
- * [reportFile], which `documentationCheck` reads. So the site is built even with a broken diagram.
+ * [reportFile], which `docsCheck` reads. So the site is built even with a broken diagram.
  */
 @CacheableTask
 internal abstract class RenderPlantUmlTask @Inject constructor(

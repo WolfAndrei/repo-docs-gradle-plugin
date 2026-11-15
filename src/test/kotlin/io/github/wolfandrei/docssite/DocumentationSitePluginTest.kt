@@ -42,7 +42,7 @@ internal class DocumentationSitePluginTest {
     @Test
     fun `site has the pages with GitLab anchors, the diagrams, the interactive pages and the search index`() {
         fixture.write()
-        fixture.run("documentationSite")
+        fixture.run("docsBuild")
 
         val usage = fixture.site("documentation/lib/how-to/usage.html").readText()
         assertTrue("id=\"установка-и-настройка\"" in usage) { usage }
@@ -98,9 +98,9 @@ internal class DocumentationSitePluginTest {
         fixture.write()
         fixture.commitRenderedDiagrams()
 
-        val result = fixture.run("documentationCheck")
+        val result = fixture.run("docsCheck")
 
-        assertEquals(TaskOutcome.SUCCESS, result.task(":documentationCheck")?.outcome)
+        assertEquals(TaskOutcome.SUCCESS, result.task(":docsCheck")?.outcome)
         assertTrue("no problems" in result.output) { result.output }
     }
 
@@ -129,7 +129,7 @@ internal class DocumentationSitePluginTest {
             """.trimMargin()
         )
 
-        val result = fixture.run("documentationCheck", expectFailure = true)
+        val result = fixture.run("docsCheck", expectFailure = true)
         val output = result.output
 
         listOf(
@@ -155,13 +155,13 @@ internal class DocumentationSitePluginTest {
         fixture.file("documentation/lib/diagrams/put.svg").writeText("<svg/>\n")
         fixture.file(".editorconfig").writeText("root = true\n\n[*]\nmax_line_length = 100\n\n[*.md]\nmax_line_length = 80\n")
 
-        val withLimit = fixture.run("documentationCheck", expectFailure = true).output
+        val withLimit = fixture.run("docsCheck", expectFailure = true).output
         assertTrue("line is 90 characters, longer than 80" in withLimit) { withLimit }
         assertFalse("out of date" in withLimit || "is not a heading" in withLimit) { withLimit }
 
         fixture.file(".editorconfig")
             .writeText("root = true\n\n[*.{md,kt}]\nmax_line_length = 80\n[*.md]\nmax_line_length = off\n")
-        assertTrue("no problems" in fixture.run("documentationCheck").output)
+        assertTrue("no problems" in fixture.run("docsCheck").output)
     }
 
     @Test
@@ -171,7 +171,7 @@ internal class DocumentationSitePluginTest {
         fixture.projectDir.resolve("documentation").renameTo(fixture.projectDir.resolve("docs"))
         fixture.file("README.md").writeText("# Fixture\n\nДокументация - в [оглавлении](docs/index.md).\n")
 
-        val tasks = arrayOf("documentationSite", "documentationCheck", "--configuration-cache")
+        val tasks = arrayOf("docsBuild", "docsCheck", "--configuration-cache")
         val result = fixture.run(*tasks)
 
         assertTrue("Documentation check: 4 pages, no problems" in result.output) { result.output }
@@ -190,7 +190,7 @@ internal class DocumentationSitePluginTest {
 
         val result = fixture.run("check", "--dry-run")
 
-        assertTrue(":documentationCheck SKIPPED" in result.output) { result.output }
+        assertTrue(":docsCheck SKIPPED" in result.output) { result.output }
     }
 
     @Test
@@ -199,25 +199,25 @@ internal class DocumentationSitePluginTest {
         fixture.commitRenderedDiagrams()
         // The render above ran without the build cache: drop its output so that the first run below stores it.
         fixture.projectDir.resolve("build").deleteRecursively()
-        val tasks = arrayOf("documentationSite", "documentationCheck", "--configuration-cache", "--build-cache")
+        val tasks = arrayOf("docsBuild", "docsCheck", "--configuration-cache", "--build-cache")
 
         fixture.run(*tasks)
         val second = fixture.run(*tasks)
         assertTrue("Reusing configuration cache" in second.output) { second.output }
-        listOf(":documentationSite", ":documentationCheck", ":documentationRenderDiagrams").forEach {
+        listOf(":docsBuild", ":docsCheck", ":docsRenderDiagrams").forEach {
             assertEquals(TaskOutcome.UP_TO_DATE, second.task(it)?.outcome) { second.output }
         }
 
         fixture.projectDir.resolve("build").deleteRecursively()
         val cached = fixture.run(*tasks)
-        listOf(":documentationSite", ":documentationCheck", ":documentationRenderDiagrams").forEach {
+        listOf(":docsBuild", ":docsCheck", ":docsRenderDiagrams").forEach {
             assertEquals(TaskOutcome.FROM_CACHE, cached.task(it)?.outcome) { cached.output }
         }
 
         fixture.file("documentation/lib/how-to/usage.md").appendText("\nНовый абзац ${System.nanoTime()}.\n")
         val changed = fixture.run(*tasks)
-        assertEquals(TaskOutcome.SUCCESS, changed.task(":documentationSite")?.outcome) { changed.output }
-        assertEquals(TaskOutcome.UP_TO_DATE, changed.task(":documentationRenderDiagrams")?.outcome) { changed.output }
+        assertEquals(TaskOutcome.SUCCESS, changed.task(":docsBuild")?.outcome) { changed.output }
+        assertEquals(TaskOutcome.UP_TO_DATE, changed.task(":docsRenderDiagrams")?.outcome) { changed.output }
     }
 
     @Test
@@ -225,7 +225,7 @@ internal class DocumentationSitePluginTest {
         fixture.write(siteSettings = "apiReference { enabled.set(false) }\n    plantUml { render.set(\"build\") }")
         fixture.file("documentation/lib/diagrams/context.svg").writeText("<svg><text>устарело</text></svg>")
 
-        fixture.run("documentationSite")
+        fixture.run("docsBuild")
 
         val diagram = fixture.site("documentation/lib/diagrams/context.svg").readText()
         assertFalse("устарело" in diagram) { diagram.take(300) }
@@ -236,25 +236,25 @@ internal class DocumentationSitePluginTest {
     fun `layout auto uses Graphviz dot when it is on PATH, smetana is forced by the setting`() {
         assumeTrue(graphvizAvailable(), "Graphviz dot is not on PATH")
         fixture.write()
-        fixture.run("documentationRenderDiagrams")
+        fixture.run("docsRenderDiagrams")
         assertTrue("\"engine\": \"dot\"" in fixture.file("build/docs-site-diagrams-report.json").readText())
 
         fixture.write(siteSettings = "apiReference { enabled.set(false) }\n    plantUml { layout.set(\"smetana\") }")
-        fixture.run("documentationRenderDiagrams")
+        fixture.run("docsRenderDiagrams")
         assertTrue("\"engine\": \"smetana\"" in fixture.file("build/docs-site-diagrams-report.json").readText())
     }
 
     @Test
     fun `build stamp changes with the content and only with it`() {
         fixture.write()
-        fixture.run("documentationSite")
+        fixture.run("docsBuild")
         val first = fixture.site("_assets/build-stamp").readText()
 
-        fixture.run("documentationSite", "--rerun-tasks")
+        fixture.run("docsBuild", "--rerun-tasks")
         assertEquals(first, fixture.site("_assets/build-stamp").readText())
 
         fixture.file("documentation/lib/how-to/usage.md").appendText("\nНовый абзац ${System.nanoTime()}.\n")
-        fixture.run("documentationSite")
+        fixture.run("docsBuild")
         val changed = fixture.site("_assets/build-stamp").readText()
         assertTrue(changed.matches(Regex("[0-9a-f]{64}")) && changed != first) { changed }
         assertTrue("_assets/build-stamp" in fixture.site("_assets/site.js").readText())
@@ -264,9 +264,9 @@ internal class DocumentationSitePluginTest {
     fun `API reference has the modules that apply Dokka and only them`() {
         fixture.write(module = true, siteSettings = "")
 
-        val result = fixture.run("documentationSite", "--configuration-cache")
+        val result = fixture.run("docsBuild", "--configuration-cache")
 
-        assertEquals(TaskOutcome.SUCCESS, result.task(":documentationApiReference")?.outcome) { result.output }
+        assertEquals(TaskOutcome.SUCCESS, result.task(":docsApiReference")?.outcome) { result.output }
         assertEquals(null, result.task(":dokkaGeneratePublicationHtml")) { "the plugin does not apply Dokka" }
         assertEquals(null, result.task(":plain:dokkaGenerateModuleHtml")) { result.output }
         val api = fixture.site("api")
@@ -281,7 +281,7 @@ internal class DocumentationSitePluginTest {
         assertTrue(module) { api.walkTopDown().take(50).joinToString("\n") }
         assertFalse("###" in api.resolve("lib/index.html").readText()) { "templates are substituted" }
 
-        val reused = fixture.run("documentationSite", "--configuration-cache")
+        val reused = fixture.run("docsBuild", "--configuration-cache")
         assertTrue("Reusing configuration cache" in reused.output) { reused.output }
     }
 
@@ -289,9 +289,9 @@ internal class DocumentationSitePluginTest {
     fun `excluded modules are not in the API reference`() {
         fixture.write(module = true, siteSettings = "apiReference { excludedModules.add(\":lib\") }")
 
-        val result = fixture.run("documentationSite")
+        val result = fixture.run("docsBuild")
 
-        assertEquals(TaskOutcome.NO_SOURCE, result.task(":documentationApiReference")?.outcome) { result.output }
+        assertEquals(TaskOutcome.NO_SOURCE, result.task(":docsApiReference")?.outcome) { result.output }
         assertFalse(fixture.site("api").exists())
     }
 
@@ -299,7 +299,7 @@ internal class DocumentationSitePluginTest {
     fun `API reference works with isolated projects`() {
         fixture.write(module = true, siteSettings = "")
 
-        val result = fixture.run("documentationSite", "-Dorg.gradle.unsafe.isolated-projects=true")
+        val result = fixture.run("docsBuild", "-Dorg.gradle.unsafe.isolated-projects=true")
 
         assertTrue("Isolated Projects is an incubating feature" in result.output) { result.output }
         assertFalse("problems were found" in result.output || "problem was found" in result.output) { result.output }

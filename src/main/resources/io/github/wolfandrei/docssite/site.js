@@ -596,8 +596,8 @@
         });
     }
 
-    // Live reload: documentationSite writes _assets/build-stamp last; a page served over HTTP polls it and reloads
-    // when it changes, that is after a rebuild by `documentationSite --continuous`.
+    // Live reload: docsBuild writes _assets/build-stamp last; a page served over HTTP polls it and reloads
+    // when it changes, that is after a rebuild by `docsBuild --continuous`.
     if (window.location.protocol.indexOf("http") === 0 && window.fetch) {
         var stamp = null;
         window.setInterval(function () {

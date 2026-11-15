@@ -56,7 +56,7 @@ abstract class DocumentationSiteExtension @Inject constructor(objects: ObjectFac
     /**
      * Prefix of the address of a repository file that is not part of the site, such as
      * `https://gitlab.example.com/group/repo/-/blob/main/`. Without it such links stay relative, and only
-     * `documentationServe` opens them, from the repository.
+     * `docs` opens them, from the repository.
      */
     abstract val sourceBrowseUrl: Property<String>
 
@@ -177,9 +177,9 @@ abstract class DocumentationSiteExtension @Inject constructor(objects: ObjectFac
         val contentsHeadings: ListProperty<String>
     }
 
-    /** Settings of `documentationCheck`. */
+    /** Settings of `docsCheck`. */
     abstract class Checks @Inject constructor(objects: ObjectFactory) {
-        /** Whether `check` depends on `documentationCheck`; by default `false`. */
+        /** Whether `check` depends on `docsCheck`; by default `false`. */
         abstract val runWithCheck: Property<Boolean>
 
         /**
@@ -201,15 +201,15 @@ abstract class DocumentationSiteExtension @Inject constructor(objects: ObjectFac
         /** Directory names that are not part of the repository for the links; by default build and cache dirs. */
         abstract val excludedDirectories: SetProperty<String>
 
-        /** The rumdl Markdown linter of `documentationCheck` and `documentationFormat`. */
+        /** The rumdl Markdown linter of `docsCheck` and `docsFormat`. */
         val markdownLint: MarkdownLint = objects.newInstance(MarkdownLint::class.java)
 
         fun markdownLint(action: Action<MarkdownLint>) = action.execute(markdownLint)
     }
 
     /**
-     * The [rumdl](https://github.com/rvben/rumdl) Markdown linter: `documentationCheck` reports its findings,
-     * `documentationFormat` applies its fixes. The rules are configured in the files rumdl finds in the repository
+     * The [rumdl](https://github.com/rvben/rumdl) Markdown linter: `docsCheck` reports its findings,
+     * `docsFormat` applies its fixes. The rules are configured in the files rumdl finds in the repository
      * root itself, `.rumdl.toml` or `.markdownlint.json` and others, so that the editors see the same rules.
      *
      * The plugin checks the relative links and the anchors itself, so the rules MD051 and MD057 are always off, and
@@ -253,7 +253,7 @@ abstract class DocumentationSiteExtension @Inject constructor(objects: ObjectFac
         fun disable(vararg rules: String) = disabledRules.addAll(*rules)
     }
 
-    /** Settings of `documentationServe`. */
+    /** Settings of `docs`. */
     interface Serve {
         /** Port on `localhost`; by default `8000`, `-PdocumentationSite.port=<port>` replaces it. */
         val port: Property<Int>

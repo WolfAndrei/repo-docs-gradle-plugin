@@ -112,7 +112,7 @@ documentation/
 ## Build the site
 
 ```shell
-./gradlew documentationSite
+./gradlew docsBuild
 ```
 
 Expected result, in the log:
@@ -131,17 +131,17 @@ Run the server and the rebuild in two terminals in the root of the repository.
 1. In the first terminal, start the server:
 
    ```shell
-   ./gradlew documentationServe
+   ./gradlew docs
    ```
 
-   Another port: `./gradlew documentationServe --port=8081` or `-PdocumentationSite.port=8081`.
+   Another port: `./gradlew docs --port=8081` or `-PdocumentationSite.port=8081`.
 
    Expected result: `Documentation site is served at http://localhost:8000/`.
 
 2. In the second terminal, start the continuous build:
 
    ```shell
-   ./gradlew documentationSite --continuous
+   ./gradlew docsBuild --continuous
    ```
 
    Expected result: `Waiting for changes to input files...`.
@@ -154,7 +154,7 @@ Run the server and the rebuild in two terminals in the root of the repository.
 ## Check the documentation
 
 ```shell
-./gradlew documentationCheck
+./gradlew docsCheck
 ```
 
 Expected result without problems: `Documentation check: <N> pages, no problems`. With problems the task fails and
@@ -179,7 +179,7 @@ documentationSite {
 
 ## Lint the Markdown pages
 
-`documentationCheck` also runs the [rumdl](https://github.com/rvben/rumdl) Markdown linter on the pages it checks.
+`docsCheck` also runs the [rumdl](https://github.com/rvben/rumdl) Markdown linter on the pages it checks.
 Its findings are in the same list, with the rule:
 
 ```text
@@ -275,13 +275,13 @@ the rumdl extension does.
 ### Fix the pages
 
 ```shell
-./gradlew documentationFormat
+./gradlew docsFormat
 ```
 
 The task runs `rumdl fmt` on the pages of the check, with the same configuration, and rewrites them in place:
 trailing spaces, blank lines around headings and lists, code fences without a language (they get `text`), the
 indentation of lists. What cannot be fixed, such as a picture without alternative text, stays for
-`documentationCheck`. Review the changes with `git diff` before committing.
+`docsCheck`. Review the changes with `git diff` before committing.
 
 Tables are aligned only with MD060 on, as in the `.rumdl.toml` above: the columns are padded by the display width of
 the text, so Cyrillic text lines up as well as Latin, and CJK characters count as two columns.
@@ -311,7 +311,7 @@ The rules of `com.appmattus.markdown` are those of markdownlint under other name
 same rules off in `.markdownlint.json` or `.rumdl.toml` and remove that plugin:
 
 | appmattus rule      | rumdl                                                                      |
-|---------------------|----------------------------------------------------------------------------|
+| ------------------- | -------------------------------------------------------------------------- |
 | `LineLengthRule`    | MD013; the plugin's `maxLineLength` replaces it                            |
 | `NoInlineHtmlRule`  | MD033                                                                      |
 | `OlPrefixRule`      | MD029                                                                      |
@@ -343,14 +343,14 @@ never shows the committed SVG; the check exists for the Git hosting and runs onl
 Fix: draw the SVG again and commit it:
 
 ```shell
-./gradlew documentationRenderDiagrams
+./gradlew docsRenderDiagrams
 cp build/docs-site-diagrams/svg/<dir>/<name>.svg <dir>/<name>.svg
 ```
 
 where `<dir>` is the directory of the diagram relative to the repository root, such as
 `documentation/lib/diagrams`, and `<name>` is the name of the `.puml` without the extension.
 
-Check: `./gradlew documentationCheck` no longer reports the diagram.
+Check: `./gradlew docsCheck` no longer reports the diagram.
 
 ### PlantUML cannot render the diagram
 
@@ -366,7 +366,7 @@ Cause: a syntax error in line 12 or in an included file. Fix: open
 Cause: the configuration `documentationPlantUmlJs` did not find the npm package `@plantuml/core`: no Ivy
 repository of [step 1](#set-up), or the registry is not reachable.
 
-Fix: add the repository. Check: after `./gradlew documentationSite` the directory `build/docs-site/_assets/plantuml/`
+Fix: add the repository. Check: after `./gradlew docsBuild` the directory `build/docs-site/_assets/plantuml/`
 exists.
 
 ### Address already in use
@@ -375,8 +375,8 @@ exists.
 java.net.BindException: Address already in use
 ```
 
-Cause: port `8000` is taken, for example by another `documentationServe`. Fix:
-`./gradlew documentationServe --port=8081`.
+Cause: port `8000` is taken, for example by another `docs`. Fix:
+`./gradlew docs --port=8081`.
 
 ### SHA-256 of rumdl is not the expected one
 
@@ -391,7 +391,7 @@ or set `checksums` for the new version from the `.sha256` files of its release.
 ### rumdl is not in the cache and Gradle is offline
 
 Cause: the binary has never been downloaded on this machine, and the build runs with `--offline`. Fix: run
-`./gradlew documentationCheck` once without `--offline`, or set `markdownLint.executable`.
+`./gradlew docsCheck` once without `--offline`, or set `markdownLint.executable`.
 
 ### No SHA-256 of the rumdl archive
 
