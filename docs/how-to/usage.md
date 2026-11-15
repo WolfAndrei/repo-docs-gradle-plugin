@@ -60,7 +60,7 @@ fixing the usual problems. Every setting is described in [Configuration and task
    site, and, for a repository hosted on GitLab, the GitLab rules of the heading anchors (the default is GitHub):
 
    ```kotlin
-   documentationSite {
+   docs {
        language.set("ru")
        sourceBrowseUrl.set("https://gitlab.example.com/group/repo/-/blob/main/")
        anchorStyle.set("gitlab")
@@ -85,7 +85,7 @@ fixing the usual problems. Every setting is described in [Configuration and task
 
 The plugin reads the layout below, with `docs/` in place of `documentation/` if the repository has only `docs/`;
 other layouts work with the paths of
-[the documentationSite block](../reference/configuration.md#the-documentationsite-block).
+[the docs block](../reference/configuration.md#the-docs-block).
 
 ```text
 README.md                         the home page
@@ -134,7 +134,7 @@ Run the server and the rebuild in two terminals in the root of the repository.
    ./gradlew docs
    ```
 
-   Another port: `./gradlew docs --port=8081` or `-PdocumentationSite.port=8081`.
+   Another port: `./gradlew docs --port=8081` or `-Pdocs.port=8081`.
 
    Expected result: `Documentation site is served at http://localhost:8000/`.
 
@@ -170,7 +170,7 @@ The rules are in [Check rules](../reference/configuration.md#check-rules); the r
 `build/docs-site-check/report.txt`. To run the check with `./gradlew check`:
 
 ```kotlin
-documentationSite {
+docs {
     checks {
         runWithCheck.set(true)
     }
@@ -255,7 +255,7 @@ One place in a page is exempted with a comment; the markdownlint form works as w
 Two settings of the plugin change the rules without a file:
 
 ```kotlin
-documentationSite {
+docs {
     checks {
         markdownLint {
             configFile.set(file("config/markdownlint.json")) // only this file, the found ones are not read
@@ -292,7 +292,7 @@ A machine without access to GitHub takes the archive from a mirror, such as a ra
 manager that holds the release files under their names:
 
 ```kotlin
-documentationSite {
+docs {
     checks {
         markdownLint {
             distributionUrl.set("https://repo.example.org/repository/raw/rumdl/v{version}/{asset}")

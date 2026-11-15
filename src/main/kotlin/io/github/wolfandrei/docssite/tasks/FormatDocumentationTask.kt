@@ -44,7 +44,7 @@ internal abstract class FormatDocumentationTask : DefaultTask() {
     @TaskAction
     fun format() {
         if (!markdownLint.enabled.get()) {
-            throw GradleException("docsFormat needs rumdl: documentationSite.checks.markdownLint.enabled is false")
+            throw GradleException("docsFormat needs rumdl: docs.checks.markdownLint.enabled is false")
         }
         val root = repositoryRoot.get().asFile
         val pages = pages.relativeTo(root).keys.toList()

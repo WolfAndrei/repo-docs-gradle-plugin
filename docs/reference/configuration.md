@@ -1,12 +1,12 @@
 # Configuration and tasks
 
-The `documentationSite { ... }` block of the root project, the Gradle tasks, the command line properties, the files
+The `docs { ... }` block of the root project, the Gradle tasks, the command line properties, the files
 and the rules of `docsCheck`. How to use them is in [How to set up, build, serve and check the
 site](../how-to/usage.md).
 
 ## Contents
 
-- [The documentationSite block](#the-documentationsite-block)
+- [The docs block](#the-docs-block)
 - [plantUml](#plantuml)
 - [apiReference](#apireference)
 - [navigation](#navigation)
@@ -20,7 +20,7 @@ site](../how-to/usage.md).
 - [Check rules](#check-rules)
 - [Dependencies](#dependencies)
 
-## The documentationSite block
+## The docs block
 
 Paths are relative to the directory of the root project.
 
@@ -52,7 +52,7 @@ follows GitHub; a repository hosted on GitLab sets the GitLab rules, so that its
 GitLab resolves them:
 
 ```kotlin
-documentationSite {
+docs {
     anchorStyle.set("gitlab")
 }
 ```
@@ -131,7 +131,7 @@ The defaults of the language:
 contents mentions.
 
 ```kotlin
-documentationSite {
+docs {
     navigation {
         groupTitles.put("explanation", "Design")
         hubs.add("docs/guide.md")
@@ -238,7 +238,7 @@ rules themselves are configured in the files of the repository, see
 `disable("MD041", "MD036")` adds to `disabledRules`.
 
 ```kotlin
-documentationSite {
+docs {
     checks {
         markdownLint {
             distributionUrl.set("https://repo.example.org/repository/raw/rumdl/v{version}/{asset}")
@@ -278,7 +278,7 @@ Linux gets the static musl build, which runs with any C library. On another plat
 a changed `version` has no checksums until they are set, for the targets the builds run on:
 
 ```kotlin
-documentationSite {
+docs {
     checks {
         markdownLint {
             version.set("0.3.5")
@@ -320,10 +320,10 @@ nothing. The tasks are in the `documentation` group of `./gradlew tasks`.
 
 ## Command line properties
 
-| Parameter                         | Effect                                  |
-| --------------------------------- | --------------------------------------- |
-| `-PdocumentationSite.port=<port>` | Replaces the default port `8000`        |
-| `--port=<port>`                   | Option of `docs`, replaces `serve.port` |
+| Parameter            | Effect                                  |
+| -------------------- | --------------------------------------- |
+| `-Pdocs.port=<port>` | Replaces the default port `8000`        |
+| `--port=<port>`      | Option of `docs`, replaces `serve.port` |
 
 ## Files
 

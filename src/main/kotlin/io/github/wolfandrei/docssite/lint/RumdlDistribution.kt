@@ -85,7 +85,7 @@ internal object RumdlDistribution {
 
         return target ?: throw UnsupportedOperationException(
             "rumdl has no release archive for $osName ($osArch): install rumdl and set " +
-                "documentationSite.checks.markdownLint.executable to its path"
+                "docs.checks.markdownLint.executable to its path"
         )
     }
 }

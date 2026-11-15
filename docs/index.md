@@ -11,7 +11,7 @@
 
 ## Reference
 
-- [Configuration and tasks](reference/configuration.md) - the `documentationSite` block, tasks, properties, files,
+- [Configuration and tasks](reference/configuration.md) - the `docs` block, tasks, properties, files,
   check rules, Markdown linter, dependencies
 
 ## Explanation

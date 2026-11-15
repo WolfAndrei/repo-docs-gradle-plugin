@@ -50,7 +50,7 @@ internal class RumdlInstaller(
     fun install(asset: RumdlAsset, checksum: String?): File {
         val expected = checksum?.trim()?.lowercase()?.takeIf { it.isNotEmpty() } ?: throw RumdlInstallException(
             "No SHA-256 of ${asset.archiveName} (rumdl ${asset.version}, ${asset.target}): set " +
-                "documentationSite.checks.markdownLint.checksums.put(\"${asset.target}\", \"<sha256>\"), the value " +
+                "docs.checks.markdownLint.checksums.put(\"${asset.target}\", \"<sha256>\"), the value " +
                 "is in ${asset.url(urlTemplate)}.sha256"
         )
         val directory = cacheDirectory.resolve(asset.version).resolve(asset.target)
@@ -68,7 +68,7 @@ internal class RumdlInstaller(
             if (offline) {
                 throw RumdlInstallException(
                     "rumdl ${asset.version} is not in $directory and Gradle is offline: run the build once " +
-                        "without --offline to download $url, or set documentationSite.checks.markdownLint.executable"
+                        "without --offline to download $url, or set docs.checks.markdownLint.executable"
                 )
             }
             val archive = File.createTempFile("download-", ".part", directory)

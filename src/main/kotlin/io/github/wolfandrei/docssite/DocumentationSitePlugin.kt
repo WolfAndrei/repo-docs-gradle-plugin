@@ -381,7 +381,7 @@ internal class DocumentationSitePlugin : Plugin<Project> {
         /** Rules of rumdl the plugin checks itself: link fragments (MD051) and relative links (MD057). */
         val RUMDL_RULES_OF_PLUGIN = listOf("MD051", "MD057")
         const val RUMDL_LINE_LENGTH_RULE = "MD013"
-        const val PORT_PROPERTY = "documentationSite.port"
+        const val PORT_PROPERTY = "docs.port"
         const val DEFAULT_PORT = 8000
         val PLANTUML_INCLUDES = listOf("**/*.puml", "**/*.iuml", "**/*.plantuml", "**/*.pu")
 

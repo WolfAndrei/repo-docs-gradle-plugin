@@ -60,11 +60,11 @@ internal class DocumentationFixture(val projectDir: File) {
             |    id("io.github.wolfandrei.docs-site")
             |}
             |
-            |documentationSite {
+            |docs {
             |    checks { markdownLint { $markdownLint } }
             |}
             |
-            |documentationSite {
+            |docs {
             |    $siteSettings
             |}
             """.trimMargin()

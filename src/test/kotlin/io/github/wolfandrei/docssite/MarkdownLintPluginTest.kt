@@ -83,7 +83,7 @@ internal class MarkdownLintPluginTest {
         fixture.file("documentation/lib/how-to/usage.md").appendText("\nПробелы в конце   \n")
         fixture.file("lint/markdownlint.json").writeText("{ \"MD041\": false, \"MD024\": false, \"MD009\": false }\n")
         fixture.file("build.gradle.kts").appendText(
-            "\ndocumentationSite.checks.markdownLint.configFile.set(file(\"lint/markdownlint.json\"))\n"
+            "\ndocs.checks.markdownLint.configFile.set(file(\"lint/markdownlint.json\"))\n"
         )
         assertTrue("no problems" in fixture.run("docsCheck").output)
 
@@ -93,7 +93,7 @@ internal class MarkdownLintPluginTest {
         assertTrue("[MD009]" in output && "[MD024]" in output) { output }
 
         fixture.file("build.gradle.kts")
-            .appendText("\ndocumentationSite.checks.markdownLint.disable(\"MD009\", \"md024\")\n")
+            .appendText("\ndocs.checks.markdownLint.disable(\"MD009\", \"md024\")\n")
         assertTrue("no problems" in fixture.run("docsCheck").output)
     }
 

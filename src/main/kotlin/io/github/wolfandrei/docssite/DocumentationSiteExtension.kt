@@ -28,7 +28,7 @@ import org.gradle.api.provider.Property
 import org.gradle.api.provider.SetProperty
 
 /**
- * Settings of the documentation site, the `documentationSite { ... }` block of the root project. Paths are relative to
+ * Settings of the documentation site, the `docs { ... }` block of the root project. Paths are relative to
  * the root project directory.
  */
 abstract class DocumentationSiteExtension @Inject constructor(objects: ObjectFactory) {
@@ -255,11 +255,11 @@ abstract class DocumentationSiteExtension @Inject constructor(objects: ObjectFac
 
     /** Settings of `docs`. */
     interface Serve {
-        /** Port on `localhost`; by default `8000`, `-PdocumentationSite.port=<port>` replaces it. */
+        /** Port on `localhost`; by default `8000`, `-Pdocs.port=<port>` replaces it. */
         val port: Property<Int>
     }
 
     internal companion object {
-        const val NAME = "documentationSite"
+        const val NAME = "docs"
     }
 }

@@ -334,7 +334,7 @@ same arguments.
 | What                                | File in `src/main/kotlin/io/github/wolfandrei/docssite/`                     |
 | ----------------------------------- | ---------------------------------------------------------------------------- |
 | Plugin, tasks, configurations       | `DocumentationSitePlugin.kt`                                                 |
-| The `documentationSite` block       | `DocumentationSiteExtension.kt`                                              |
+| The `docs` block                    | `DocumentationSiteExtension.kt`                                              |
 | Markdown, links, anchors            | `markdown/`                                                                  |
 | Template, sidebar, search, diagrams | `site/`; styles and script in `src/main/resources/.../site.css`, `site.js`   |
 | API pages and links to them         | `site/DokkaReference.kt`, `site/ApiSymbols.kt`                               |
