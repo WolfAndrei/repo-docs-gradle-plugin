@@ -65,13 +65,9 @@ internal class DocumentationSitePluginTest {
         assertTrue("System_Ext(app, &quot;Приложение&quot;" in usage.replace(Regex("</?span[^>]*>"), "")) { usage }
         assertTrue("<span class=\"tok-meta\">!include</span>" in usage) { "the source is highlighted: $usage" }
 
-        // auto: the sequence diagram is drawn in the browser, the C4 one needs library sprites and stays from the build
-        val browser = Regex("class=\"plantuml-browser\" id=\"[^\"]+\" data-image=\"([^\"]+)\"").findAll(usage)
-            .map { it.groupValues[1] }.toList()
-        assertEquals(listOf("../diagrams/put.svg"), browser) { usage }
-        val engine = fixture.site("_assets/plantuml/plantuml.js").readText()
-        assertTrue("window.PlantUmlJs={render:" in engine) { engine.takeLast(300) }
-        assertTrue(fixture.site("_assets/plantuml/viz-global.js").isFile)
+        // build, the default: every diagram is drawn at build time, the browser engine is not downloaded
+        assertFalse("plantuml-browser" in usage) { usage }
+        assertFalse(fixture.site("_assets/plantuml").exists()) { "build rendering needs no browser engine" }
 
         val interactive = fixture.site("documentation/lib/interactive/modes.html").readText()
         assertTrue("<iframe class=\"interactive-frame\" src=\"modes.frame.html\" title=\"Режимы\">" in interactive) {
@@ -221,6 +217,42 @@ internal class DocumentationSitePluginTest {
     }
 
     @Test
+    fun `auto draws in the browser all but the diagrams with library sprites or the ELK layout`() {
+        fixture.write(siteSettings = "apiReference { enabled.set(false) }\n    plantUml { render.set(\"auto\") }")
+        fixture.file("documentation/lib/diagrams/modules.puml").writeText(ELK_DIAGRAM)
+        fixture.file("documentation/lib/how-to/usage.md").appendText("\n![Модули](../diagrams/modules.svg)\n")
+
+        fixture.run("docsBuild")
+
+        val usage = fixture.site("documentation/lib/how-to/usage.html").readText()
+        val browser = Regex("class=\"plantuml-browser\" id=\"[^\"]+\" data-image=\"([^\"]+)\"").findAll(usage)
+            .map { it.groupValues[1] }.toList()
+        assertEquals(listOf("../diagrams/put.svg"), browser) { usage }
+        val engine = fixture.site("_assets/plantuml/plantuml.js").readText()
+        assertTrue("window.PlantUmlJs={render:" in engine) { engine.takeLast(300) }
+        assertTrue(fixture.site("_assets/plantuml/viz-global.js").isFile)
+    }
+
+    @Test
+    fun `docsDiagrams writes the SVG next to the sources, the ELK layout included, and fails on a broken diagram`() {
+        fixture.write()
+        fixture.file("documentation/lib/diagrams/modules.puml").writeText(ELK_DIAGRAM)
+
+        fixture.run("docsDiagrams")
+
+        val modules = fixture.file("documentation/lib/diagrams/modules.svg").readText()
+        assertTrue("lib-impl" in modules && "Exception" !in modules) { modules.take(2000) }
+        assertTrue("<svg" in fixture.file("documentation/lib/diagrams/context.svg").readText())
+        assertTrue("<svg" in fixture.file("documentation/lib/diagrams/put.svg").readText())
+
+        fixture.file("documentation/lib/diagrams/broken.puml").writeText("@startuml\nAlice -> Bob : hi\nfoo bar baz ((\n@enduml\n")
+        val result = fixture.run("docsDiagrams", expectFailure = true)
+
+        assertTrue("documentation/lib/diagrams/broken.puml:3" in result.output) { result.output }
+        assertFalse(fixture.file("documentation/lib/diagrams/broken.svg").exists()) { "nothing is written on an error" }
+    }
+
+    @Test
     fun `committed SVG is never used, the site draws the diagram from its source`() {
         fixture.write(siteSettings = "apiReference { enabled.set(false) }\n    plantUml { render.set(\"build\") }")
         fixture.file("documentation/lib/diagrams/context.svg").writeText("<svg><text>устарело</text></svg>")
@@ -309,5 +341,16 @@ internal class DocumentationSitePluginTest {
     private companion object {
         fun graphvizAvailable(): Boolean = System.getenv("PATH").orEmpty().split(File.pathSeparator)
             .any { File(it, "dot").canExecute() }
+
+        /** A diagram of the ELK layout: the PlantUML build of the plugin has to carry ELK and its xbase library. */
+        val ELK_DIAGRAM = """
+            |@startuml
+            |!pragma layout elk
+            |rectangle "lib-api" as api
+            |rectangle "lib-impl" as impl
+            |impl --> api : реализует
+            |@enduml
+            |
+        """.trimMargin()
     }
 }

@@ -105,7 +105,8 @@ internal class SiteDiagrams(
         val text = preprocessed[source]?.readText() ?: return null
         val lines = text.lines()
         val librarySprites = lines.any { LIBRARY_SPRITE.matches(it) }
-        if (render == DiagramRender.AUTO && librarySprites) return null
+        val elk = lines.any { ELK_LAYOUT.matches(it) }
+        if (render == DiagramRender.AUTO && (librarySprites || elk)) return null
 
         return lines.filterNot { LIBRARY_SPRITE.matches(it) }
     }
@@ -141,5 +142,8 @@ internal class SiteDiagrams(
 
         /** A sprite that the preprocessor left as a reference to the compiled standard library: `sprite $a #c4#b:c`. */
         val LIBRARY_SPRITE = Regex("\\s*sprite\\s+\\$\\S+\\s+#\\S+#\\S+\\s*")
+
+        /** The ELK layout: the browser build of PlantUML may lack it, so such a diagram is drawn at build time. */
+        val ELK_LAYOUT = Regex("\\s*!pragma\\s+layout\\s+elk\\s*", RegexOption.IGNORE_CASE)
     }
 }

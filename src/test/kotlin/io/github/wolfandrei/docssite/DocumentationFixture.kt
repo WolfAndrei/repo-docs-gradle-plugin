@@ -224,11 +224,7 @@ internal class DocumentationFixture(val projectDir: File) {
 
     /** Renders the diagrams and commits their SVG next to the sources, as the authors do. */
     fun commitRenderedDiagrams() {
-        run("docsRenderDiagrams")
-        val rendered = projectDir.resolve("build/docs-site-diagrams/svg")
-        rendered.walkTopDown().filter { it.isFile }.forEach { svg ->
-            svg.copyTo(projectDir.resolve(svg.relativeTo(rendered).path), overwrite = true)
-        }
+        run("docsDiagrams")
     }
 
     fun run(vararg arguments: String, expectFailure: Boolean = false): BuildResult {

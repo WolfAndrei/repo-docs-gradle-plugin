@@ -28,6 +28,7 @@ import io.github.wolfandrei.docssite.tasks.FormatDocumentationTask
 import io.github.wolfandrei.docssite.tasks.MarkdownLintSettings
 import io.github.wolfandrei.docssite.tasks.RenderPlantUmlTask
 import io.github.wolfandrei.docssite.tasks.ServeDocumentationSiteTask
+import io.github.wolfandrei.docssite.tasks.WriteDiagramsTask
 import io.github.wolfandrei.docssite.markdown.MarkdownPage
 import io.github.wolfandrei.docssite.site.NavigationOptions
 import org.gradle.api.Plugin
@@ -76,7 +77,10 @@ internal class DocumentationSitePlugin : Plugin<Project> {
             resolvable(PLANTUML_JS_CONFIGURATION, "Browser build of PlantUML, the npm package @plantuml/core.") {
                 isTransitive = false
                 defaultDependencies {
-                    add(project.dependencies.create("$PLANTUML_JS_MODULE:${extension.plantUml.version.get()}@tgz"))
+                    // Build rendering draws no diagram in the browser: the package is not downloaded.
+                    if (extension.plantUml.render.get() != RENDER_BUILD) {
+                        add(project.dependencies.create("$PLANTUML_JS_MODULE:${extension.plantUml.version.get()}@tgz"))
+                    }
                 }
             }
         )
@@ -136,6 +140,14 @@ internal class DocumentationSitePlugin : Plugin<Project> {
             reportFile.set(layout.buildDirectory.file("docs-site-check/report.txt"))
         }
 
+        tasks.register<WriteDiagramsTask>(DIAGRAMS_TASK) {
+            group = GROUP
+            description = "Writes the SVG of every PlantUML diagram next to its source, as the site draws it."
+            renderedDiagrams.set(render.flatMap { it.outputDirectory.dir(RenderPlantUmlTask.SVG_DIR) })
+            plantUmlReport.set(render.flatMap { it.reportFile })
+            repositoryRoot.set(layout.projectDirectory)
+        }
+
         tasks.register<FormatDocumentationTask>(FORMAT_TASK) {
             group = GROUP
             description = "Fixes the Markdown pages of the documentation in place with rumdl."
@@ -172,7 +184,7 @@ internal class DocumentationSitePlugin : Plugin<Project> {
         extension.outputDirectory.convention(layout.buildDirectory.dir("docs-site"))
         extension.plantUml.version.convention(PLANTUML_VERSION)
         extension.plantUml.layout.convention(RenderPlantUmlTask.AUTO)
-        extension.plantUml.render.convention(RENDER_AUTO)
+        extension.plantUml.render.convention(RENDER_BUILD)
         extension.apiReference.enabled.convention(true)
         extension.checks.runWithCheck.convention(false)
         extension.checks.maxLineLength.convention(
@@ -247,8 +259,11 @@ internal class DocumentationSitePlugin : Plugin<Project> {
             description = "Renders the PlantUML diagrams of the documentation to SVG and preprocessed sources."
 
             val classpath = resolvable(PLANTUML_CONFIGURATION, "PlantUML that renders the diagrams of the site.") {
+                isTransitive = false
                 defaultDependencies {
                     add(project.dependencies.create("$PLANTUML_MODULE:${extension.plantUml.version.get()}"))
+                    // The ELK layout of plantuml-epl needs the Xtend runtime, which the EPL build leaves out.
+                    add(project.dependencies.create(XBASE_LIB_MODULE))
                 }
             }
 
@@ -347,12 +362,18 @@ internal class DocumentationSitePlugin : Plugin<Project> {
         const val PLANTUML_JS_CONFIGURATION = "documentationPlantUmlJs"
         const val DOKKA_CLI_CONFIGURATION = "documentationDokkaCli"
         const val DOKKA_PLUGINS_CONFIGURATION = "documentationDokkaPlugins"
-        const val PLANTUML_MODULE = "net.sourceforge.plantuml:plantuml-mit"
+        const val DIAGRAMS_TASK = "docsDiagrams"
+
+        /** The EPL build of PlantUML: unlike the MIT one, it has the ELK layout (`!pragma layout elk`). */
+        const val PLANTUML_MODULE = "net.sourceforge.plantuml:plantuml-epl"
+
+        /** Xtend runtime of ELK, EPL-2.0; 2.36.0 is the last release for Java 11, later ones need Java 21. */
+        const val XBASE_LIB_MODULE = "org.eclipse.xtext:org.eclipse.xtext.xbase.lib:2.36.0"
 
         /** The npm package `@plantuml/core`, resolved through an Ivy repository over an npm registry. */
         const val PLANTUML_JS_MODULE = "plantuml-npm:core"
         const val PLANTUML_VERSION = "1.2026.9"
-        const val RENDER_AUTO = "auto"
+        const val RENDER_BUILD = "build"
         const val DOKKA_GROUP = "org.jetbrains.dokka"
         const val DOKKA_VERSION = "2.1.0"
         const val DOKKA_USAGE = "org.jetbrains.dokka"

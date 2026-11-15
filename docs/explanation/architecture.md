@@ -37,8 +37,8 @@ README.md, documentation/**/*.md ───────────────�
 documentation/** (png, html, puml, iuml) ── copy ──────────────────────┤
 documentation/**/*.puml ── docsRenderDiagrams ── svg, preproc ┼── docsBuild ── build/docs-site
 modules with Dokka ── dokkaGenerateModuleHtml ── docsApiReference ┘
-                                   │
-                                   └── report.json ── docsCheck ── report.txt
+                                   ├── report.json ── docsCheck ── report.txt
+                                   └── svg ── docsDiagrams ── documentation/**/*.svg
 ```
 
 The site keeps the layout of the repository: `documentation/lib/how-to/usage.md` becomes
@@ -125,9 +125,14 @@ such as `<C4/C4_Context>`.
 
 ### Drawn at build time
 
-`docsRenderDiagrams` runs PlantUML from the `plantuml-mit` jar in a separate JVM, once per directory with
+`docsRenderDiagrams` runs PlantUML from the `plantuml-epl` jar in a separate JVM, once per directory with
 diagrams, twice: `-tsvg` draws SVG and `-preproc` writes the **preprocessed source**, the text of the diagram with
-every `!include` and macro expanded. No installed PlantUML is needed.
+every `!include` and macro expanded. No installed PlantUML is needed. `docsDiagrams` copies the SVG next to their
+`.puml`, so the Git hosting shows the picture of the site; with an error in any diagram it copies nothing.
+
+The EPL build is the one that carries the ELK layout engine (`!pragma layout elk`): the MIT build leaves ELK out.
+The EPL build also leaves out the Xtend runtime that ELK needs, so the classpath adds
+`org.eclipse.xtext.xbase.lib`; its version `2.36.0` is the last one compiled for Java 11.
 
 PlantUML lays a diagram out with Graphviz `dot` or with its built-in Smetana engine. With `layout = "auto"` the task
 looks for `dot` (`dotExecutable`, `GRAPHVIZ_DOT`, `PATH`) and uses it if found, otherwise Smetana. The `dot` found
@@ -147,7 +152,9 @@ The page holds the preprocessed source of each diagram drawn in the browser; the
 `renderToString` and replaces the build SVG; on an error the build SVG stays. The browser build cannot read files:
 the preprocessed source has no `!include` left, but the sprites of the standard library stay references
 (`sprite $person #c4#c4_context:person`) that the browser build cannot resolve. Hence `render = "auto"` draws the
-diagrams with such sprites (C4 with `Person`, `System`) at build time and the others in the browser.
+diagrams with such sprites (C4 with `Person`, `System`) and the diagrams with `!pragma layout elk` at build time and
+the others in the browser. The default `render = "build"` draws every diagram at build time, and the npm package is
+not downloaded.
 
 ### Zoom and pan
 
@@ -304,7 +311,8 @@ same arguments.
 
 - `docsBuild`, `docsCheck`, `docsRenderDiagrams` and `docsApiReference` declare
   their inputs and outputs, are cacheable and compatible with the configuration cache; their input paths are
-  relative, so the cache moves between clones.
+  relative, so the cache moves between clones. `docsDiagrams` writes into the documentation, which the other tasks
+  read, so it is untracked and runs every time.
 - The rumdl binary is identified by its version and checksum, or by the content of `executable`; the configuration
   files rumdl reads for the pages are inputs too, so a change of `.rumdl.toml` reruns the check.
 - The list of repository files for the link check and the Graphviz found come from `ValueSource`s that are not read

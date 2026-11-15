@@ -39,8 +39,9 @@ fixing the usual problems. Every setting is described in [Configuration and task
    ```
 
    Maven Central gives PlantUML and the Dokka command line; the Ivy repository gives the npm package
-   `@plantuml/core`, the browser build of PlantUML. A company mirror of the npm registry works the same way: put its
-   address in `url`. Without the Ivy repository the site still builds and draws every diagram at build time.
+   `@plantuml/core`, the browser build of PlantUML, which only `plantUml.render` `auto` and `browser` need. A company
+   mirror of the npm registry works the same way: put its address in `url`. Without the Ivy repository the site still
+   builds and draws every diagram at build time.
 
    A build that declares repositories in each project instead of `dependencyResolutionManagement` needs the same
    repositories in the root project.
@@ -343,12 +344,10 @@ never shows the committed SVG; the check exists for the Git hosting and runs onl
 Fix: draw the SVG again and commit it:
 
 ```shell
-./gradlew docsRenderDiagrams
-cp build/docs-site-diagrams/svg/<dir>/<name>.svg <dir>/<name>.svg
+./gradlew docsDiagrams
 ```
 
-where `<dir>` is the directory of the diagram relative to the repository root, such as
-`documentation/lib/diagrams`, and `<name>` is the name of the `.puml` without the extension.
+The task writes the SVG of every diagram next to its `.puml`; `git status` shows the changed ones.
 
 Check: `./gradlew docsCheck` no longer reports the diagram.
 
@@ -359,12 +358,13 @@ documentation/lib/diagrams/context.puml:12: PlantUML cannot render the diagram, 
 ```
 
 Cause: a syntax error in line 12 or in an included file. Fix: open
-`build/docs-site-diagrams/svg/<dir>/<name>.svg`, PlantUML writes the error into the picture.
+`build/docs-site-diagrams/svg/<dir>/<name>.svg`, PlantUML writes the error into the picture. `docsDiagrams` fails
+with the same list and writes no SVG next to the sources.
 
 ### The browser build of PlantUML is not available
 
-Cause: the configuration `documentationPlantUmlJs` did not find the npm package `@plantuml/core`: no Ivy
-repository of [step 1](#set-up), or the registry is not reachable.
+Cause: `plantUml.render` is `auto` or `browser`, and the configuration `documentationPlantUmlJs` did not find the
+npm package `@plantuml/core`: no Ivy repository of [step 1](#set-up), or the registry is not reachable.
 
 Fix: add the repository. Check: after `./gradlew docsBuild` the directory `build/docs-site/_assets/plantuml/`
 exists.

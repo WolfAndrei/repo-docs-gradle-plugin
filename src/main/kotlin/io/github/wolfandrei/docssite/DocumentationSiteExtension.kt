@@ -93,7 +93,7 @@ abstract class DocumentationSiteExtension @Inject constructor(objects: ObjectFac
     /** Diagrams from the `.puml` files of the documentation; the site never shows their committed SVG. */
     interface PlantUml {
         /**
-         * Version of PlantUML: of `net.sourceforge.plantuml:plantuml-mit` for the build and of the npm package
+         * Version of PlantUML: of `net.sourceforge.plantuml:plantuml-epl` for the build and of the npm package
          * `@plantuml/core` for the browser; by default [DocumentationSitePlugin.PLANTUML_VERSION].
          */
         val version: Property<String>
@@ -108,8 +108,9 @@ abstract class DocumentationSiteExtension @Inject constructor(objects: ObjectFac
         val dotExecutable: Property<String>
 
         /**
-         * Where the diagrams are drawn: `auto` (default) - in the browser, except the diagrams with sprites of the
-         * standard library (C4 icons), which are drawn at build time; `browser`; `build`.
+         * Where the diagrams are drawn: `build` (default) - at build time; `auto` - in the browser, except the
+         * diagrams with sprites of the standard library (C4 icons) or the ELK layout, which are drawn at build time;
+         * `browser`.
          */
         val render: Property<String>
     }

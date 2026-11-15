@@ -13,8 +13,9 @@ diagrams and lints the Markdown with rumdl.
 - **Markdown as on GitLab and GitHub.** Relative links between `.md` files, heading anchors by the rules of GitHub
   (default) or GitLab (`anchorStyle.set("gitlab")`), GFM tables, task lists and autolinks. The site keeps the
   layout of the repository, so the links stay valid.
-- **Diagrams from source.** Every `.puml` is drawn at build time or in the browser; the committed SVG is never
-  shown. Diagrams can be zoomed, panned and opened full screen.
+- **Diagrams from source.** Every `.puml` is drawn to SVG at build time, the ELK layout included; the committed SVG
+  is never shown. `docsDiagrams` writes the same SVG next to the source for the Git hosting. Diagrams can be zoomed,
+  panned and opened full screen.
 - **API reference inside the documentation.** The Dokka pages of the modules that apply Dokka are shown in the
   site layout, under the library they belong to. Inline code such as `Greeter` or `Greeter.greet`
   in the Markdown pages links to the declaration.
@@ -33,7 +34,8 @@ diagrams and lints the Markdown with rumdl.
 ## Quick start
 
 `settings.gradle.kts`: the plugin, the Dokka command line and PlantUML come from Maven Central and the Gradle Plugin
-Portal; the browser build of PlantUML is an npm package, fetched through an Ivy repository over the npm registry.
+Portal. The Ivy repository over the npm registry gives the browser build of PlantUML, which only `plantUml.render`
+`auto` and `browser` need; without it the site builds the same.
 
 ```kotlin
 pluginManagement {

@@ -64,9 +64,9 @@ docs {
 | `version`       | `Property<String>` | `1.2026.9` | Version of PlantUML for the build and for the browser          |
 | `layout`        | `Property<String>` | `auto`     | Layout engine of the build: `auto`, `dot`, `smetana`           |
 | `dotExecutable` | `Property<String>` | not set    | Path of Graphviz `dot`; without it `GRAPHVIZ_DOT`, then `PATH` |
-| `render`        | `Property<String>` | `auto`     | Where the diagrams are drawn: `auto`, `browser`, `build`       |
+| `render`        | `Property<String>` | `build`    | Where the diagrams are drawn: `build`, `auto`, `browser`       |
 
-`version` is the version of two artifacts: `net.sourceforge.plantuml:plantuml-mit` for the build and the npm package
+`version` is the version of two artifacts: `net.sourceforge.plantuml:plantuml-epl` for the build and the npm package
 `@plantuml/core` for the browser. `@plantuml/core` is MIT-licensed since `1.2026.6`, earlier versions are GPL.
 
 `layout`:
@@ -77,12 +77,13 @@ docs {
 
 `render`:
 
+- `build` - every diagram at build time; the npm package is not downloaded and the browser engine is not copied to
+  the site;
 - `auto` - in the browser, except the diagrams with sprites of the standard library (the C4 icons of `Person`,
-  `System`), which the build draws;
-- `browser` - every diagram in the browser; the sprites of the standard library are left out;
-- `build` - every diagram at build time; the browser engine is not copied to the site.
+  `System`) and the diagrams with `!pragma layout elk`, which the build draws;
+- `browser` - every diagram in the browser; the sprites of the standard library are left out.
 
-Without the npm package every diagram is drawn at build time and `docsBuild` warns
+With `auto` or `browser` and without the npm package every diagram is drawn at build time and `docsBuild` warns
 `The browser build of PlantUML is not available`. Details are in
 [PlantUML diagrams](../explanation/architecture.md#plantuml-diagrams).
 
@@ -309,11 +310,12 @@ The plugin also turns off the rules it checks itself, see [Rules shared with rum
 | `docsCheck`          | Checks the documentation by the [rules](#check-rules), fails on errors |
 | `docsFormat`         | Fixes the Markdown pages in place with `rumdl fmt`                     |
 | `docsRenderDiagrams` | Draws the `.puml` files to SVG and writes preprocessed sources         |
+| `docsDiagrams`       | Writes the SVG of every `.puml` next to it; fails on a diagram error   |
 | `docsApiReference`   | Joins the Dokka HTML of the modules into one reference                 |
 
-All tasks but `docs` and `docsFormat` are cacheable and compatible with the configuration
-cache and with isolated projects. `docsFormat` changes the sources, so it is never up to date and is not
-cached; it is compatible with the configuration cache too. `docs` does not rebuild the site:
+All tasks but `docs`, `docsFormat` and `docsDiagrams` are cacheable and compatible with the configuration
+cache and with isolated projects. `docsFormat` and `docsDiagrams` change the sources, so they are never up to date
+and are not cached; they are compatible with the configuration cache too. `docs` does not rebuild the site:
 `./gradlew docsBuild --continuous` in a second terminal does. `docsRenderDiagrams` without
 `.puml` files and `docsApiReference` without modules with Dokka are skipped (`NO-SOURCE`) and download
 nothing. The tasks are in the `documentation` group of `./gradlew tasks`.
@@ -401,7 +403,8 @@ does not overlap `forbiddenCharacters` unless both are configured.
 | `org.commonmark:commonmark` and GFM extensions     | `0.31.0`   | The plugin: Markdown                      |
 | `org.jsoup:jsoup`                                  | `1.16.1`   | The plugin: Dokka and interactive pages   |
 | `org.jetbrains.kotlinx:kotlinx-serialization-json` | `1.7.1`    | The plugin: indexes and reports           |
-| `net.sourceforge.plantuml:plantuml-mit`            | `1.2026.9` | Configuration `documentationPlantUml`     |
+| `net.sourceforge.plantuml:plantuml-epl`            | `1.2026.9` | Configuration `documentationPlantUml`     |
+| `org.eclipse.xtext:org.eclipse.xtext.xbase.lib`    | `2.36.0`   | Configuration `documentationPlantUml`     |
 | npm `@plantuml/core` as `plantuml-npm:core@tgz`    | `1.2026.9` | Configuration `documentationPlantUmlJs`   |
 | `org.jetbrains.dokka:dokka-cli`                    | `2.1.0`    | Configuration `documentationDokkaCli`     |
 | Dokka plugins for the aggregation                  | `2.1.0`    | Configuration `documentationDokkaPlugins` |
