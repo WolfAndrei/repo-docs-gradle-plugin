@@ -1,20 +1,10 @@
-# docs-site documentation
+# repo-docs documentation
 
-> The Gradle plugin `io.github.wolfandrei.docs-site` builds a static site from the documentation of a repository:
-> Markdown pages, PlantUML diagrams, interactive pages, the Dokka API reference and the search. It is applied to the
-> root project.
-
-## How-to
-
-- [How to set up, build, serve and check the site](how-to/usage.md) - repositories, plugin, layout of the
-  documentation, build, server with live reload, checks, Markdown linter, troubleshooting
+> The Gradle plugin `io.github.wolfandrei.repo-docs` builds a static site from the documentation of a repository:
+> Markdown pages, PlantUML diagrams, HTML pages, the Dokka API reference and the search. Setting up and the
+> tasks are in the [README](../README.md); each setting is described in the KDoc of the `docs { }` block.
 
 ## Reference
 
-- [Configuration and tasks](reference/configuration.md) - the `docs` block, tasks, properties, files,
-  check rules, Markdown linter, dependencies
-
-## Explanation
-
-- [How the plugin works](explanation/architecture.md) - data flow, anchors, sidebar, diagrams and their viewer, API
-  pages and links to them, interactive pages, highlighting, search, server, Markdown linter, limitations
+- [Conventions](conventions.md) - layout of the documentation, links, sidebar, links to the API, heading anchors,
+  diagrams, HTML pages, Markdown linter, checks, limitations, troubleshooting

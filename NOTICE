@@ -1,4 +1,4 @@
-docs-site Gradle plugin
+repo-docs Gradle plugin
 Copyright 2026 Andrei Volkau
 
 This product is licensed under the Apache License, Version 2.0 (see LICENSE).
@@ -6,37 +6,39 @@ This product is licensed under the Apache License, Version 2.0 (see LICENSE).
 Third-party components
 ======================
 
-Bundled as dependencies of the plugin (resolved from Maven Central):
+Dependencies of the plugin (resolved with the plugin from the repositories of its build):
 
 - commonmark-java 0.31.0 (org.commonmark:commonmark and the GFM tables, strikethrough,
   task list items and autolink extensions) - BSD 2-Clause License,
   https://github.com/commonmark/commonmark-java
-- jsoup 1.16.1 (org.jsoup:jsoup) - MIT License, https://jsoup.org
+- autolink-java 0.12.0 (org.nibor.autolink:autolink), used by the autolink extension -
+  MIT License, https://github.com/robinst/autolink-java
+- jsoup 1.23.2 (org.jsoup:jsoup) - MIT License, https://jsoup.org
 - kotlinx.serialization 1.7.1 (org.jetbrains.kotlinx:kotlinx-serialization-json) -
   Apache License 2.0, https://github.com/Kotlin/kotlinx.serialization
+- Chicory 1.7.5 (com.dylibso.chicory:runtime, wasm), the WebAssembly runtime of rumdl -
+  Apache License 2.0, https://github.com/dylibso/chicory
 
-Resolved by the plugin at build time in the project that applies it (not contained in this
-repository or in the plugin artifact):
+Contained in the plugin artifact, under io/github/wolfandrei/repodocs/:
 
-- PlantUML, MIT-licensed build (net.sourceforge.plantuml:plantuml-mit) - MIT License,
-  https://plantuml.com
-- @plantuml/core (npm package, the browser build of PlantUML) - MIT License. The site copies
-  these files of the package into its output:
-  - plantuml.js, emoji.js, openiconic.js, LICENSE - MIT License;
-  - viz-global.js - Viz.js 3.24.0, MIT License, Copyright (c) Michael Daines; it contains
-    in object code form Graphviz (Eclipse Public License 1.0, https://www.graphviz.org) and
-    Expat (MIT License, https://libexpat.github.io);
-  - themes.js - the PlantUML themes; each theme states its own license in its header
-    (MIT, Apache License 2.0, and GPL 3+ for the "sunlust" theme). The themes are data that
-    PlantUML reads only when a diagram selects a theme with `!theme`.
-- Dokka command line and plugins (org.jetbrains.dokka:dokka-cli, dokka-base,
-  templating-plugin, all-modules-page-plugin, analysis-kotlin-symbols) -
-  Apache License 2.0, https://github.com/Kotlin/dokka
-- rumdl, the Markdown linter (a native binary) - MIT License, Copyright (c) 2024-2025 Ruben J. Jongejan,
-  https://github.com/rvben/rumdl. The plugin is not distributed with rumdl: the lint tasks
-  download the release archive of the platform from the rumdl releases or a configured
-  mirror into the Gradle user home and run it as a separate process. The archive contains
-  the LICENSE of rumdl; only the binary is extracted.
+- PlantUML 1.2026.9, the EPL build (net.sourceforge.plantuml:plantuml-epl), unmodified, as the
+  file bundled/plantuml-epl-1.2026.9.jar - Eclipse Public License 2.0, https://plantuml.com.
+  The jar contains third-party libraries under their own licenses, among them Guava (Apache
+  License 2.0), Eclipse EMF and ELK (Eclipse Public License 2.0) and OpenPDF. The source code
+  is the artifact net.sourceforge.plantuml:plantuml-epl:1.2026.9:sources on Maven Central and
+  https://github.com/plantuml/plantuml. It runs in a separate JVM, not linked with the plugin.
+- Xtend runtime 2.36.0 (org.eclipse.xtext:org.eclipse.xtext.xbase.lib), unmodified, as the file
+  bundled/org.eclipse.xtext.xbase.lib-2.36.0.jar - Eclipse Public License 2.0,
+  https://github.com/eclipse/xtext; the source code is its sources artifact on Maven Central.
+- rumdl 0.3.4, the Markdown linter: the WebAssembly module of the npm package rumdl-wasm,
+  compiled to JVM classes (lint/wasm/) - MIT License, Copyright (c) 2024-2025 Ruben J. Jongejan,
+  https://github.com/rvben/rumdl; the license is the file bundled/rumdl-LICENSE.
+
+Not part of the plugin, used when the project applies it:
+
+- Dokka (org.jetbrains.dokka:dokka-gradle-plugin), the version of the project; the plugin
+  compiles against its API and reads its HTML output - Apache License 2.0,
+  https://github.com/Kotlin/dokka
 
 The site does not use any network resources at run time: fonts are the system fonts of the
 reader, and the scripts and styles of the site are part of this repository.

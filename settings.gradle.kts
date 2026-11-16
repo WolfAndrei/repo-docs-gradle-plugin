@@ -30,7 +30,15 @@ dependencyResolutionManagement {
     repositories {
         mavenCentral()
         gradlePluginPortal()
+        // The npm registry for the package that the plugin bundles: rumdl-wasm.
+        ivy {
+            name = "npm"
+            url = uri("https://registry.npmjs.org")
+            patternLayout { artifact("[module]/-/[module]-[revision].[ext]") }
+            metadataSources { artifact() }
+            content { includeGroup("npm") }
+        }
     }
 }
 
-rootProject.name = "docs-site"
+rootProject.name = "repo-docs-gradle-plugin"

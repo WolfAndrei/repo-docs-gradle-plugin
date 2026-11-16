@@ -1,13 +1,18 @@
 [versions]
-java = "17"
 commonmark = "0.31.0"
-jsoup = "1.16.1"
+jsoup = "1.23.2"
 kotlinx-serialization = "1.7.1"
 junit = "5.10.2"
 # Only for the tests: the fixture projects apply Kotlin Multiplatform and Dokka.
 kotlin = "2.4.20"
-dokka = "2.1.0"
+dokka = "2.3.0"
 plugin-publish = "2.0.0"
+# Bundled into the plugin at its build: the plugin downloads nothing at the build of a project.
+plantuml = "1.2026.9"
+# Xtend runtime of ELK, EPL-2.0; 2.36.0 is the last release for Java 11, later ones need Java 21.
+xbase-lib = "2.36.0"
+rumdl = "0.3.4"
+chicory = "1.7.5"
 
 [libraries]
 commonmark-core = { module = "org.commonmark:commonmark", version.ref = "commonmark" }
@@ -22,6 +27,12 @@ junit-jupiter = { module = "org.junit.jupiter:junit-jupiter" }
 junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
 kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
 dokka-gradle-plugin = { module = "org.jetbrains.dokka:dokka-gradle-plugin", version.ref = "dokka" }
+plantuml-epl = { module = "net.sourceforge.plantuml:plantuml-epl", version.ref = "plantuml" }
+xbase-lib = { module = "org.eclipse.xtext:org.eclipse.xtext.xbase.lib", version.ref = "xbase-lib" }
+# The npm package through the Ivy repository of settings.gradle.kts.
+npm-rumdl-wasm = { module = "npm:rumdl-wasm", version.ref = "rumdl" }
+chicory-runtime = { module = "com.dylibso.chicory:runtime", version.ref = "chicory" }
+chicory-build-time-compiler = { module = "com.dylibso.chicory:build-time-compiler", version.ref = "chicory" }
 
 [bundles]
 commonmark = ["commonmark-core", "commonmark-ext-gfm-tables", "commonmark-ext-gfm-strikethrough", "commonmark-ext-task-list-items", "commonmark-ext-autolink"]
