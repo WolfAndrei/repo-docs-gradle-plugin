@@ -6,7 +6,7 @@ junit = "5.10.2"
 # Only for the tests: the fixture projects apply Kotlin Multiplatform and Dokka.
 kotlin = "2.4.20"
 dokka = "2.3.0"
-plugin-publish = "2.0.0"
+plugin-publish = "2.2.1"
 # Bundled into the plugin at its build: the plugin downloads nothing at the build of a project.
 plantuml = "1.2026.9"
 # Xtend runtime of ELK, EPL-2.0; 2.36.0 is the last release for Java 11, later ones need Java 21.

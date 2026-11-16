@@ -359,10 +359,14 @@ internal class DocumentationSitePluginTest {
     }
 
     @Test
-    fun `API reference works with isolated projects`() {
+    fun `the tasks work with isolated projects`() {
         fixture.write(module = true, siteSettings = "")
 
-        val result = fixture.run("docsBuild", "-Dorg.gradle.unsafe.isolated-projects=true")
+        val isolated = "-Dorg.gradle.unsafe.isolated-projects=true"
+        fixture.run("docsDiagrams", isolated)
+        // docs opens a browser, so it is only configured: a dry run.
+        fixture.run("docs", "--dry-run", isolated)
+        val result = fixture.run("docsBuild", "docsCheck", isolated)
 
         assertTrue("Isolated Projects is an incubating feature" in result.output) { result.output }
         assertFalse("problems were found" in result.output || "problem was found" in result.output) { result.output }

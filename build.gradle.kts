@@ -15,6 +15,7 @@
  */
 
 import java.security.MessageDigest
+import org.gradle.plugin.compatibility.compatibility
 
 plugins {
     `kotlin-dsl`
@@ -173,6 +174,13 @@ gradlePlugin {
             description = "A static site of the repository documentation: Markdown pages, PlantUML diagrams, " +
                 "HTML pages and the Dokka API reference in one navigation, with search, checks and live reload."
             tags.set(listOf("documentation", "markdown", "plantuml", "dokka", "static-site"))
+            // The tests run the tasks with the configuration cache and with isolated projects.
+            compatibility {
+                features {
+                    configurationCache = true
+                    isolatedProjects = true
+                }
+            }
         }
     }
 }
