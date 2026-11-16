@@ -10,6 +10,7 @@
 - A change of behaviour comes with a test, with the KDoc of the setting it touches and, if it changes a convention,
   with [docs/conventions.md](docs/conventions.md).
 - Commit messages: a short imperative subject line, then the reason of the change.
+- Releases: see [RELEASING.md](RELEASING.md).
 
 ## Where things are
 

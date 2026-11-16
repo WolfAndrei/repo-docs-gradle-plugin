@@ -160,6 +160,8 @@ tasks.test {
     maxHeapSize = "1g"
 }
 
+// Gradle Plugin Portal: publishPlugins uploads the jar, its sources and Javadoc and the plugin marker, see
+// RELEASING.md.
 gradlePlugin {
     website.set("https://github.com/wolfandrei/repo-docs-gradle-plugin")
     vcsUrl.set("https://github.com/wolfandrei/repo-docs-gradle-plugin")
@@ -169,7 +171,7 @@ gradlePlugin {
             implementationClass = "io.github.wolfandrei.repodocs.DocumentationSitePlugin"
             displayName = "Repository documentation"
             description = "A static site of the repository documentation: Markdown pages, PlantUML diagrams, " +
-                "interactive pages, the Dokka API reference merged into one navigation, search and live reload."
+                "HTML pages and the Dokka API reference in one navigation, with search, checks and live reload."
             tags.set(listOf("documentation", "markdown", "plantuml", "dokka", "static-site"))
         }
     }
